@@ -1,6 +1,8 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@theme inline {
+:root {
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --color-background: #ffffff;
   --color-foreground: #0a0a0a;
@@ -120,7 +122,7 @@ body {
 }
 
 .separator {
-  @apply shrink-0 bg-border h-[1px] w-full;
+  @apply shrink-0 bg-border h-px w-full;
 }
 
 /* Table styles */
