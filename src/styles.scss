@@ -44,18 +44,15 @@ body {
 }
 
 .btn-primary {
-  @apply bg-primary text-primary-foreground hover:bg-primary/90;
-  @apply h-10 px-4 py-2;
+  @apply bg-primary text-primary-foreground hover:opacity-90 h-10 px-4 py-2;
 }
 
 .btn-secondary {
-  @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
-  @apply h-10 px-4 py-2;
+  @apply bg-secondary text-secondary-foreground hover:opacity-80 h-10 px-4 py-2;
 }
 
 .btn-outline {
-  @apply border border-input bg-background hover:bg-accent hover:text-accent-foreground;
-  @apply h-10 px-4 py-2;
+  @apply border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2;
 }
 
 .btn-ghost {
@@ -64,8 +61,7 @@ body {
 }
 
 .btn-destructive {
-  @apply bg-destructive text-destructive-foreground hover:bg-destructive/90;
-  @apply h-10 px-4 py-2;
+  @apply bg-destructive text-destructive-foreground hover:opacity-90 h-10 px-4 py-2;
 }
 
 .btn-sm {
@@ -139,7 +135,7 @@ body {
 }
 
 .table-row {
-  @apply border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted;
+  @apply border-b transition-colors hover:opacity-90 data-[state=selected]:bg-muted;
 }
 
 .table-head {

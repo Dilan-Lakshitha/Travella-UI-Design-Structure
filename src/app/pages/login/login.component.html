@@ -1,0 +1,43 @@
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
+  <app-card class="w-full max-w-md">
+    <app-card-header class="space-y-1 text-center">
+      <div class="flex justify-center mb-4">
+        <div class="rounded-full bg-blue-500 p-3">
+          <app-icon name="plane" [size]="32" class="text-white" />
+        </div>
+      </div>
+      <app-card-title class="text-3xl">Travella</app-card-title>
+      <app-card-description>Travel Management System</app-card-description>
+    </app-card-header>
+
+    <app-card-content>
+      <form (ngSubmit)="handleLogin()" class="space-y-4">
+        <div class="space-y-2">
+          <app-label for="traveler-email">Email</app-label>
+          <app-input id="traveler-email" type="email" placeholder="traveler@example.com" [(ngModel)]="email" name="email"
+            [required]="true" />
+        </div>
+        <div class="space-y-2">
+          <app-label for="traveler-password">Password</app-label>
+          <app-input id="traveler-password" type="password" placeholder="••••••••" [(ngModel)]="password"
+            name="password" [required]="true" />
+        </div>
+        <p *ngIf="errorMessage" class="text-sm text-red-600">
+          {{ errorMessage }}
+        </p>
+        <button type="submit" class="btn btn-primary w-full">
+          Sign In as Traveler
+        </button>
+      </form>
+    </app-card-content>
+
+    <app-card-footer class="flex flex-col space-y-3">
+      <div class="text-sm text-muted-foreground text-center">
+        Don't have an account?
+      </div>
+      <button class="btn btn-outline w-full" (click)="goToRegister()">
+        Sign Up
+      </button>
+    </app-card-footer>
+  </app-card>
+</div>

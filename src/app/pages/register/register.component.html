@@ -1,0 +1,56 @@
+<div class="min-h-screen flex items-center justify-center bg-gray-100">
+  <div class="w-full max-w-md bg-white rounded-xl shadow-lg p-8 space-y-6 animate-fade-in">
+    <div class="flex justify-center">
+      <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white text-xl">
+        ✈️
+      </div>
+    </div>
+
+    <div class="text-center">
+      <h2 class="text-xl font-semibold">Travella Registration</h2>
+      <p class="text-sm text-gray-500">Travel Management System</p>
+    </div>
+
+    <form class="space-y-4" (ngSubmit)="register()">
+      <div>
+        <label class="text-sm font-medium">Name</label>
+        <input type="text" class="input mt-1" placeholder="Enter your name" [(ngModel)]="name" name="name" required>
+      </div>
+
+      <div>
+        <label class="text-sm font-medium">Email Address</label>
+        <input type="email" class="input mt-1" placeholder="Enter your email" [(ngModel)]="email" name="email" required>
+      </div>
+
+      <div>
+        <label class="text-sm font-medium">Password</label>
+        <input type="password" class="input mt-1" placeholder="Enter password" [(ngModel)]="password" name="password" required>
+      </div>
+
+      <div>
+        <label class="text-sm font-medium">Confirm Password</label>
+        <input type="password" class="input mt-1" placeholder="Confirm password" [(ngModel)]="confirmPassword" name="confirmPassword" required>
+      </div>
+
+      <div>
+        <label class="text-sm font-medium">Phone Number</label>
+        <input type="text" class="input mt-1" placeholder="Enter phone number (optional)" [(ngModel)]="phone" name="phone">
+      </div>
+
+      <p *ngIf="errorMessage" class="text-sm text-red-600">
+        {{ errorMessage }}
+      </p>
+
+      <button type="submit" class="w-full bg-black text-white py-2 rounded-full hover:opacity-90 transition">
+        Sign Up
+      </button>
+    </form>
+
+    <p class="text-center text-sm text-gray-500">
+      Already have an account?
+      <a routerLink="/login" class="text-blue-500 hover:underline">Sign In</a>
+    </p>
+
+  </div>
+
+</div>
