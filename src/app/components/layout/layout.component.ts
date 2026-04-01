@@ -15,78 +15,23 @@ interface NavItem {
   selector: 'app-layout',
   standalone: true,
   imports: [CommonModule, RouterLink, RouterLinkActive, IconComponent, ButtonComponent],
-  template: `
-    <div class="min-h-screen bg-gray-50">
-      <!-- Header -->
-      <header class="bg-white border-b sticky top-0 z-10">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex justify-between items-center h-16">
-            <div class="flex items-center space-x-3">
-              <div class="rounded-full bg-blue-500 p-2">
-                <app-icon name="plane" [size]="20" class="text-white" />
-              </div>
-              <div>
-                <h1 class="text-xl font-semibold">Travella</h1>
-                <p class="text-xs text-gray-500 capitalize">{{ role }} Portal</p>
-              </div>
-            </div>
-            
-            <button
-              type="button"
-              class="btn btn-ghost btn-sm"
-              (click)="logout()"
-            >
-              <app-icon name="log-out" [size]="16" class="mr-2" />
-              Logout
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Navigation Tabs -->
-        <div class="mb-6">
-          <div class="flex space-x-1 border-b">
-            @for (item of navItems; track item.path) {
-              <button
-                type="button"
-                [class]="getNavItemClasses(item.path)"
-                (click)="navigateTo(item.path)"
-              >
-                <app-icon [name]="item.icon" [size]="16" class="mr-2" />
-                <span>{{ item.label }}</span>
-              </button>
-            }
-          </div>
-        </div>
-
-        <!-- Page Title -->
-        <div class="mb-6">
-          <h2 class="text-2xl font-bold text-gray-900">{{ title }}</h2>
-        </div>
-
-        <!-- Main Content -->
-        <div>
-          <ng-content />
-        </div>
-      </div>
-    </div>
-  `
+  template: "./layout.component.html",
+  styleUrls: ["./layout.component.scss"],
 })
 export class LayoutComponent {
   @Input() title = '';
-  @Input() role: UserRole = 'guest';
+  @Input() role: UserRole = 'traveler';
 
   private router = inject(Router);
   private authService = inject(AuthService);
 
   get navItems(): NavItem[] {
-    if (this.role === 'guest') {
+    if (this.role === 'traveler') {
       return [
-        { icon: 'home', label: 'Dashboard', path: '/guest/dashboard' },
-        { icon: 'calendar', label: 'Create Itinerary', path: '/guest/itinerary-builder' },
+        { icon: 'home', label: 'Dashboard', path: '/traveler/dashboard' },
+        { icon: 'calendar', label: 'Create Itinerary', path: '/traveler/itinerary-builder' },
       ];
-    } else if (this.role === 'agency') {
+    } else if (this.role === 'staff') {
       return [
         { icon: 'file-text', label: 'Review Queue', path: '/agency/review' },
         { icon: 'users', label: 'Staff Management', path: '/agency/staff' },

@@ -37,7 +37,7 @@ interface AuthResponse {
   providedIn: 'root'
 })
 export class AuthService {
-  private readonly apiBaseUrl = 'http://localhost:5094/api/auth';
+  private readonly apiBaseUrl = 'http://localhost:7094/api/auth';
   private readonly tokenKey = 'travella.jwt';
   private readonly userKey = 'travella.user';
   private http = inject(HttpClient);
