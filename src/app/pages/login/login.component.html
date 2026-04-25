@@ -13,6 +13,19 @@
     <app-card-content>
       <form (ngSubmit)="handleLogin()" class="space-y-4">
         <div class="space-y-2">
+          <app-label for="role">Role</app-label>
+          <select
+            id="role"
+            class="input mt-1"
+            [(ngModel)]="role"
+            name="role"
+          >
+            <option value="TRAVELER">Traveler</option>
+            <option value="STAFF">Staff</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+        </div>
+        <div class="space-y-2">
           <app-label for="traveler-email">Email</app-label>
           <app-input id="traveler-email" type="email" placeholder="traveler@example.com" [(ngModel)]="email" name="email"
             [required]="true" />
@@ -26,7 +39,7 @@
           {{ errorMessage }}
         </p>
         <button type="submit" class="btn btn-primary w-full">
-          Sign In as Traveler
+          Sign In
         </button>
       </form>
     </app-card-content>

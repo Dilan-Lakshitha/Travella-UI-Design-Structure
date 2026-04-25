@@ -1,5 +1,19 @@
-    <app-layout title="My Travel Plans" role="guest">
+    <app-layout title="My Travel Plans" role="TRAVELER">
       <div class="space-y-6">
+        @if (isLoading) {
+          <app-card>
+            <app-card-content class="pt-6 text-center text-gray-500">
+              Loading your itineraries...
+            </app-card-content>
+          </app-card>
+        }
+        @if (!isLoading && errorMessage) {
+          <app-card>
+            <app-card-content class="pt-6 text-center text-red-600">
+              {{ errorMessage }}
+            </app-card-content>
+          </app-card>
+        }
         <!-- Action Button -->
         <div class="flex justify-between items-center">
           <p class="text-gray-600">Plan your dream vacation with personalized itineraries</p>
@@ -21,38 +35,21 @@
           } @else {
             <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               @for (itinerary of draftItineraries; track itinerary.id) {
-                <app-card class="hover:shadow-lg transition-shadow cursor-pointer">
-                  <app-card-header>
-                    <div class="flex justify-between items-start">
-                      <app-card-title class="text-lg">{{ itinerary.title }}</app-card-title>
-                      <app-badge [class]="getStatusColor(itinerary.status)">
-                        {{ itinerary.status }}
-                      </app-badge>
-                    </div>
-                    <app-card-description class="flex items-center">
-                      <app-icon name="map-pin" [size]="12" class="mr-1" />
-                      {{ itinerary.destination }}
-                    </app-card-description>
-                  </app-card-header>
-                  <app-card-content class="space-y-3">
-                    <div class="flex items-center text-sm text-gray-600">
-                      <app-icon name="calendar" [size]="16" class="mr-2" />
-                      {{ formatDate(itinerary.startDate) }} - {{ formatDate(itinerary.endDate) }}
-                    </div>
-                    <div class="flex items-center text-sm text-gray-600">
-                      <app-icon name="clock" [size]="16" class="mr-2" />
-                      {{ itinerary.daysCount }} days
-                    </div>
-                    <div class="flex space-x-2">
-                      <button
-                        class="btn btn-primary btn-sm flex-1"
-                        (click)="navigateToBuilder()"
-                      >
-                        Continue Editing
-                      </button>
-                    </div>
-                  </app-card-content>
-                </app-card>
+                <app-itinerary-card
+                  [item]="itinerary"
+                  [statusLabel]="formatStatus(itinerary.status)"
+                  [statusClass]="getStatusColor(itinerary.status)"
+                >
+                  <div class="flex space-x-2">
+                    <button class="btn btn-primary btn-sm flex-1" (click)="navigateToEditItinerary(itinerary.id)">Continue Editing</button>
+                    <button class="btn btn-outline btn-sm flex-1" [disabled]="busyItineraryIds.has(itinerary.id)" (click)="submitItinerary(itinerary.id, $event)">
+                      @if (busyItineraryIds.has(itinerary.id)) { Submitting... } @else { Submit }
+                    </button>
+                  </div>
+                  <button class="btn btn-destructive btn-sm w-full" [disabled]="busyItineraryIds.has(itinerary.id)" (click)="deleteDraft(itinerary.id, $event)">
+                    Delete Draft
+                  </button>
+                </app-itinerary-card>
               }
             </div>
           }
@@ -73,9 +70,9 @@
                 <app-card class="hover:shadow-lg transition-shadow">
                   <app-card-header>
                     <div class="flex justify-between items-start">
-                      <app-card-title class="text-lg">{{ itinerary.title }}</app-card-title>
+                      <app-card-title class="text-lg">{{ itinerary.tripName }}</app-card-title>
                       <app-badge [class]="getStatusColor(itinerary.status)">
-                        {{ itinerary.status }}
+                        {{ formatStatus(itinerary.status) }}
                       </app-badge>
                     </div>
                     <app-card-description class="flex items-center">
@@ -98,6 +95,34 @@
           }
         </div>
 
+        <!-- Returned for Correction -->
+        <div>
+          <h3 class="text-lg font-semibold mb-4">Returned for Correction</h3>
+          @if (correctedItineraries.length === 0) {
+            <app-card>
+              <app-card-content class="pt-6 text-center text-gray-500">
+                No correction requests at the moment
+              </app-card-content>
+            </app-card>
+          } @else {
+            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              @for (itinerary of correctedItineraries; track itinerary.id) {
+                <app-itinerary-card
+                  [item]="itinerary"
+                  [statusLabel]="'Returned for Correction'"
+                  [statusClass]="getStatusColor('returned')"
+                >
+                  <div class="text-sm text-red-600">Returned with requested changes. Update and resubmit.</div>
+                  <div class="flex gap-2">
+                    <button class="btn btn-primary btn-sm flex-1" (click)="navigateToEditItinerary(itinerary.id)">Edit Itinerary</button>
+                    <button class="btn btn-outline btn-sm flex-1" (click)="openConversation(itinerary.id)">View Conversation</button>
+                  </div>
+                </app-itinerary-card>
+              }
+            </div>
+          }
+        </div>
+
         <!-- Approved Itineraries -->
         <div>
           <h3 class="text-lg font-semibold mb-4">Approved Itineraries</h3>
@@ -113,9 +138,9 @@
                 <app-card class="hover:shadow-lg transition-shadow cursor-pointer border-green-200">
                   <app-card-header>
                     <div class="flex justify-between items-start">
-                      <app-card-title class="text-lg">{{ itinerary.title }}</app-card-title>
+                      <app-card-title class="text-lg">{{ itinerary.tripName }}</app-card-title>
                       <app-badge [class]="getStatusColor(itinerary.status)">
-                        {{ itinerary.status }}
+                        {{ formatStatus(itinerary.status) }}
                       </app-badge>
                     </div>
                     <app-card-description class="flex items-center">
@@ -141,4 +166,12 @@
           }
         </div>
       </div>
+      <app-conversation-modal
+        [open]="conversationOpen"
+        [messages]="messages"
+        [currentRole]="'TRAVELER'"
+        [title]="'Itinerary Conversation'"
+        (openChange)="conversationOpen = $event"
+        (send)="sendConversationMessage($event)"
+      />
     </app-layout>

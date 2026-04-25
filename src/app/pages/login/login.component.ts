@@ -2,7 +2,7 @@ import { Component, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { Router } from "@angular/router";
-import { AuthService } from "../../services/auth.service";
+import { AuthService, UserRole } from "../../services/auth.service";
 import {
   CardComponent,
   CardHeaderComponent,
@@ -43,16 +43,22 @@ export class LoginComponent {
   email = "";
   password = "";
   errorMessage = "";
+  role: UserRole = 'TRAVELER';
 
   async handleLogin(): Promise<void> {
     this.errorMessage = "";
-    const isSuccess = await this.authService.login(this.email, this.password, "traveler");
+    const isSuccess = await this.authService.login(this.email, this.password, this.role);
     if (!isSuccess) {
       this.errorMessage = "Invalid email or password.";
       return;
     }
 
-    const redirectUrl = this.authService.getRedirectUrl("traveler");
+    if (this.authService.mustResetPassword()) {
+      this.router.navigate(['/reset-password']);
+      return;
+    }
+
+    const redirectUrl = this.authService.getRedirectUrl(this.role);
     this.router.navigate([redirectUrl]);
   }
 

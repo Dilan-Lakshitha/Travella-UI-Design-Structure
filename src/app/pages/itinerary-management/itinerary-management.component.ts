@@ -1,9 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LayoutComponent } from '../../components/layout/layout.component';
 import { CardComponent, CardContentComponent } from '../../components/ui/card.component';
 import { BadgeComponent } from '../../components/ui/badge.component';
 import { IconComponent } from '../../components/ui/icons.component';
+import { ToastService } from '../../services/toast.service';
+import { ItineraryService } from '../../services/itinerary.service';
 
 interface TimelineDay {
   day: number;
@@ -20,6 +22,7 @@ interface Itinerary {
   startDate: string;
   days: number;
   status: string;
+  rawStatus: string;
   timeline: TimelineDay[];
 }
 
@@ -35,9 +38,9 @@ interface Itinerary {
     IconComponent
   ],
   template: `
-    <app-layout title="Itinerary Timeline View" role="admin">
+    <app-layout title="Itinerary Timeline View" role="ADMIN">
       <div class="space-y-8">
-        @for (itinerary of mockItineraries; track itinerary.id) {
+        @for (itinerary of itineraries; track itinerary.id) {
           <app-card class="overflow-hidden">
             <div class="bg-gradient-to-r from-blue-50 to-purple-50 p-6 border-b">
               <div class="flex justify-between items-start">
@@ -61,6 +64,23 @@ interface Itinerary {
                 <app-badge [class]="getStatusColor(itinerary.status)">
                   {{ itinerary.status }}
                 </app-badge>
+                <div class="mt-3 flex gap-2">
+                  @if (itinerary.rawStatus === 'sent_to_admin') {
+                    <button class="btn btn-primary btn-sm" (click)="handleApproveFinal(itinerary.id)">
+                      Approve Final
+                    </button>
+                  }
+                  @if (itinerary.rawStatus === 'approved_by_admin') {
+                    <button class="btn btn-primary btn-sm" (click)="handleConfirm(itinerary.id)">
+                      Confirm
+                    </button>
+                  }
+                  @if (itinerary.rawStatus === 'sent_to_admin' || itinerary.rawStatus === 'approved_by_admin') {
+                    <button class="btn btn-outline btn-sm" (click)="handleReject(itinerary.id)">
+                      Reject
+                    </button>
+                  }
+                </div>
               </div>
             </div>
 
@@ -89,17 +109,8 @@ interface Itinerary {
                                 {{ formatDate(day.date) }}
                               </p>
                               <div class="space-y-2">
-                                <div class="text-sm">
-                                  <span class="font-medium">Activities:</span>
-                                  <ul class="list-disc list-inside ml-2 text-gray-600">
-                                    <li>Morning city tour</li>
-                                    <li>Visit main attractions</li>
-                                    <li>Local cuisine experience</li>
-                                  </ul>
-                                </div>
-                                <div class="flex space-x-4 text-sm">
-                                  <span><strong>Accommodation:</strong> Hotel Paradise</span>
-                                  <span><strong>Meal Plan:</strong> HB</span>
+                                <div class="text-sm text-gray-600">
+                                  Detailed day activities are available in the itinerary details view.
                                 </div>
                               </div>
                             </div>
@@ -143,39 +154,58 @@ interface Itinerary {
     </app-layout>
   `
 })
-export class ItineraryManagementComponent {
-  mockItineraries: Itinerary[] = [
-    {
-      id: 1,
-      tripName: 'European Adventure',
-      guest: 'John Doe',
-      destination: 'Paris - Rome - Barcelona',
-      startDate: '2026-03-15',
-      days: 10,
-      status: 'submitted',
-      timeline: [
-        { day: 1, date: '2026-03-15', destination: 'Paris', status: 'planned' },
-        { day: 2, date: '2026-03-16', destination: 'Paris', status: 'planned' },
-        { day: 3, date: '2026-03-17', destination: 'Paris', status: 'planned' },
-        { day: 4, date: '2026-03-18', destination: 'Rome', status: 'planned' },
-        { day: 5, date: '2026-03-19', destination: 'Rome', status: 'planned' },
-      ]
-    },
-    {
-      id: 2,
-      tripName: 'Beach Paradise',
-      guest: 'Jane Smith',
-      destination: 'Maldives',
-      startDate: '2026-02-01',
-      days: 7,
-      status: 'confirmed',
-      timeline: [
-        { day: 1, date: '2026-02-01', destination: 'Maldives', status: 'confirmed' },
-        { day: 2, date: '2026-02-02', destination: 'Maldives', status: 'confirmed' },
-        { day: 3, date: '2026-02-03', destination: 'Maldives', status: 'confirmed' },
-      ]
-    },
-  ];
+export class ItineraryManagementComponent implements OnInit {
+  private toastService = inject(ToastService);
+  private itineraryService = inject(ItineraryService);
+
+  itineraries: Itinerary[] = [];
+
+  async ngOnInit() {
+    try {
+      const rows = await this.itineraryService.getCompanyItineraries();
+      this.itineraries = (rows ?? []).map((r: any) => {
+        const days = Number(r.daysCount ?? 0) || 0;
+        const rawStatus = String(r.rawStatus ?? '');
+        return {
+          id: r.id,
+          tripName: r.tripName ?? '',
+          guest: r.guestName ?? '',
+          destination: r.destination ?? '',
+          startDate: r.startDate,
+          days,
+          status: r.status ?? '',
+          rawStatus,
+          timeline: this.buildTimeline(r.startDate, days, rawStatus, r.destination ?? '')
+        } as Itinerary;
+      });
+    } catch (e) {
+      console.error(e);
+      this.toastService.error('Failed to load admin itineraries.');
+    }
+  }
+
+  private buildTimeline(startDate: string, days: number, rawStatus: string, destination: string): TimelineDay[] {
+    const start = new Date(startDate);
+    const safeDays = Math.max(0, Math.min(days, 14));
+
+    const dayStatus = (() => {
+      if (rawStatus === 'confirmed') return 'confirmed';
+      if (rawStatus === 'approved_by_admin') return 'in-progress';
+      if (rawStatus === 'sent_to_admin') return 'planned';
+      return 'planned';
+    })();
+
+    return Array.from({ length: safeDays }, (_, i) => {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      return {
+        day: i + 1,
+        date: d.toISOString(),
+        destination,
+        status: dayStatus
+      };
+    });
+  }
 
   getStatusColor(status: string): string {
     const colors: Record<string, string> = {
@@ -183,9 +213,43 @@ export class ItineraryManagementComponent {
       submitted: 'bg-blue-100 text-blue-800',
       approved: 'bg-green-100 text-green-800',
       confirmed: 'bg-purple-100 text-purple-800',
-      corrected: 'bg-orange-100 text-orange-800'
+      corrected: 'bg-orange-100 text-orange-800',
+      rejected: 'bg-red-100 text-red-800'
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
+  }
+
+  async handleApproveFinal(itineraryId: number): Promise<void> {
+    try {
+      await this.itineraryService.adminApprove(itineraryId);
+      this.toastService.success('Approved by admin.');
+      await this.ngOnInit();
+    } catch (e) {
+      console.error(e);
+      this.toastService.error('Failed to approve.');
+    }
+  }
+
+  async handleConfirm(itineraryId: number): Promise<void> {
+    try {
+      await this.itineraryService.confirmItinerary(itineraryId);
+      this.toastService.success('Itinerary confirmed.');
+      await this.ngOnInit();
+    } catch (e) {
+      console.error(e);
+      this.toastService.error('Failed to confirm.');
+    }
+  }
+
+  async handleReject(itineraryId: number): Promise<void> {
+    try {
+      await this.itineraryService.adminReject(itineraryId);
+      this.toastService.error('Itinerary rejected.');
+      await this.ngOnInit();
+    } catch (e) {
+      console.error(e);
+      this.toastService.error('Failed to reject.');
+    }
   }
 
   getDotClasses(status: string): string {

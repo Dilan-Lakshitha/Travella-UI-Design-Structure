@@ -13,13 +13,18 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent)
   },
   {
+    path: 'reset-password',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/reset-password/reset-password.component').then(m => m.ResetPasswordComponent)
+  },
+  {
     path: 'register',
     loadComponent: () => import('./pages/register/register.component').then(m => m.RegisterComponent)
   },
   {
     path: 'guest',
     canActivate: [authGuard, roleGuard],
-    data: { roles: ['traveler'] },
+    data: { roles: ['TRAVELER'] },
     children: [
       {
         path: 'dashboard',
@@ -27,6 +32,33 @@ export const routes: Routes = [
       },
       {
         path: 'itinerary-builder',
+        loadComponent: () => import('./pages/itinerary-builder/itinerary-builder.component').then(m => m.ItineraryBuilderComponent)
+      },
+      {
+        path: 'itinerary-builder/:id',
+        loadComponent: () => import('./pages/itinerary-builder/itinerary-builder.component').then(m => m.ItineraryBuilderComponent)
+      },
+      {
+        path: 'booking/:id',
+        loadComponent: () => import('./pages/booking-confirmation/booking-confirmation.component').then(m => m.BookingConfirmationComponent)
+      }
+    ]
+  },
+  {
+    path: 'traveler',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['TRAVELER'] },
+    children: [
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./pages/guest-dashboard/guest-dashboard.component').then(m => m.GuestDashboardComponent)
+      },
+      {
+        path: 'itinerary-builder',
+        loadComponent: () => import('./pages/itinerary-builder/itinerary-builder.component').then(m => m.ItineraryBuilderComponent)
+      },
+      {
+        path: 'itinerary-builder/:id',
         loadComponent: () => import('./pages/itinerary-builder/itinerary-builder.component').then(m => m.ItineraryBuilderComponent)
       },
       {
@@ -38,7 +70,7 @@ export const routes: Routes = [
   {
     path: 'agency',
     canActivate: [authGuard, roleGuard],
-    data: { roles: ['admin', 'staff'] },
+    data: { roles: ['ADMIN', 'STAFF'] },
     children: [
       {
         path: 'review',
@@ -57,7 +89,7 @@ export const routes: Routes = [
   {
     path: 'admin',
     canActivate: [authGuard, roleGuard],
-    data: { roles: ['super_admin'] },
+    data: { roles: ['ADMIN'] },
     children: [
       {
         path: 'dashboard',
@@ -66,6 +98,18 @@ export const routes: Routes = [
       {
         path: 'itineraries',
         loadComponent: () => import('./pages/itinerary-management/itinerary-management.component').then(m => m.ItineraryManagementComponent)
+      },
+      {
+        path: 'staff',
+        loadComponent: () => import('./pages/admin-staff-users/admin-staff-users.component').then(m => m.AdminStaffUsersComponent)
+      },
+      {
+        path: 'drivers',
+        loadComponent: () => import('./pages/admin-drivers/admin-drivers.component').then(m => m.AdminDriversComponent)
+      },
+      {
+        path: 'guides',
+        loadComponent: () => import('./pages/admin-guides/admin-guides.component').then(m => m.AdminGuidesComponent)
       }
     ]
   },

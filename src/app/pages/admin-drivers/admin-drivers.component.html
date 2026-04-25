@@ -1,0 +1,71 @@
+<app-layout title="Driver Management" role="ADMIN">
+  <div class="space-y-6">
+    <app-card>
+      <app-card-header>
+        <app-card-title>Add Driver</app-card-title>
+        <app-card-description>Only ADMIN can create drivers</app-card-description>
+      </app-card-header>
+      <app-card-content class="space-y-4">
+        <div class="grid gap-4 md:grid-cols-2">
+          <div class="space-y-2">
+            <app-label for="name">Name</app-label>
+            <app-input id="name" [(ngModel)]="name" />
+          </div>
+          <div class="space-y-2">
+            <app-label for="phone">Phone</app-label>
+            <app-input id="phone" [(ngModel)]="phone" />
+          </div>
+          <div class="space-y-2">
+            <app-label for="experience">Experience</app-label>
+            <app-input type="number" id="experience" [(ngModel)]="experience" placeholder="e.g. 5 years" />
+          </div>
+          <div class="space-y-2">
+            <app-label for="availability">Availability</app-label>
+            <app-select id="availability" [(ngModel)]="availability" [options]="availabilityOptions" />
+          </div>
+        </div>
+
+        <button class="btn btn-primary" (click)="create()" [disabled]="isCreating">
+          <app-icon name="plus" [size]="16" class="mr-2" />
+          @if (isCreating) { Creating... } @else { Add Driver }
+        </button>
+      </app-card-content>
+    </app-card>
+
+    <app-card>
+      <app-card-header>
+        <app-card-title>Drivers</app-card-title>
+        <app-card-description>All drivers in your company</app-card-description>
+      </app-card-header>
+      <app-card-content>
+        @if (isLoading) {
+          <div class="text-center text-gray-500 py-6">Loading drivers...</div>
+        } @else if (errorMessage) {
+          <div class="text-center text-red-600 py-6">{{ errorMessage }}</div>
+        } @else {
+          <app-table>
+            <app-table-header>
+              <app-table-row>
+                <app-table-head>Name</app-table-head>
+                <app-table-head>Phone</app-table-head>
+                <app-table-head>Experience</app-table-head>
+                <app-table-head>Availability</app-table-head>
+              </app-table-row>
+            </app-table-header>
+            <app-table-body>
+              @for (d of rows; track d.id) {
+                <app-table-row>
+                  <app-table-cell class="font-medium">{{ d.name }}</app-table-cell>
+                  <app-table-cell>{{ d.phone || '—' }}</app-table-cell>
+                  <app-table-cell>{{ d.experience || '—' }}</app-table-cell>
+                  <app-table-cell>{{ d.availability || '—' }}</app-table-cell>
+                </app-table-row>
+              }
+            </app-table-body>
+          </app-table>
+        }
+      </app-card-content>
+    </app-card>
+  </div>
+</app-layout>
+

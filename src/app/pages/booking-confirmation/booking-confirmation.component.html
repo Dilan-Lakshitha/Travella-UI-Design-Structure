@@ -1,182 +1,120 @@
-<app-layout title="Booking Summary" role="guest">
-      <div class="max-w-4xl mx-auto space-y-6">
-        <!-- Status Banner -->
-        <app-card class="border-green-200 bg-green-50">
-          <app-card-content class="pt-6">
+<app-layout title="Booking Summary" role="TRAVELER">
+  <div class="max-w-4xl mx-auto space-y-6">
+    @if (isLoading) {
+      <app-card>
+        <app-card-content class="pt-6 text-center text-gray-500">
+          Loading itinerary...
+        </app-card-content>
+      </app-card>
+    }
+    @if (!isLoading && errorMessage) {
+      <app-card>
+        <app-card-content class="pt-6 text-center text-red-600">
+          {{ errorMessage }}
+        </app-card-content>
+      </app-card>
+    }
+
+    @if (itinerary) {
+      <!-- Status Banner -->
+      <app-card class="border-blue-200 bg-blue-50">
+        <app-card-content class="pt-6">
+          <div class="flex items-center justify-between gap-4">
             <div class="flex items-center">
-              <app-icon name="circle-check" [size]="48" class="text-green-600 mr-4" />
+              <app-icon name="file-text" [size]="40" class="text-blue-600 mr-4" />
               <div>
-                <h3 class="text-xl font-semibold text-green-900">Itinerary Approved!</h3>
-                <p class="text-green-700">Your customized travel package is ready. Review the details and confirm your booking.</p>
+                <h3 class="text-xl font-semibold text-blue-900">Itinerary Details</h3>
+                <p class="text-blue-700">
+                  Current status: <strong>{{ itinerary.status }}</strong>
+                </p>
               </div>
             </div>
-          </app-card-content>
-        </app-card>
+            <app-badge class="bg-blue-100 text-blue-800">{{ itinerary.status }}</app-badge>
+          </div>
+        </app-card-content>
+      </app-card>
 
-        <!-- Trip Overview -->
-        <app-card>
-          <app-card-header>
-            <div class="flex justify-between items-start">
-              <app-card-title>Beach Paradise</app-card-title>
-              <app-badge class="bg-green-100 text-green-800">Approved</app-badge>
-            </div>
-          </app-card-header>
-          <app-card-content class="space-y-4">
-            <div class="grid gap-4 md:grid-cols-2">
-              <div class="flex items-center">
-                <app-icon name="map-pin" [size]="20" class="mr-3 text-gray-400" />
-                <div>
-                  <p class="text-sm text-gray-500">Destination</p>
-                  <p class="font-medium">Maldives</p>
-                </div>
-              </div>
-              <div class="flex items-center">
-                <app-icon name="calendar" [size]="20" class="mr-3 text-gray-400" />
-                <div>
-                  <p class="text-sm text-gray-500">Travel Dates</p>
-                  <p class="font-medium">Feb 1 - Feb 8, 2026 (7 days)</p>
-                </div>
+      <!-- Trip Overview -->
+      <app-card>
+        <app-card-header>
+          <div class="flex justify-between items-start">
+            <app-card-title>{{ itinerary.tripName || ('Itinerary #' + itinerary.id) }}</app-card-title>
+            <app-badge class="bg-gray-100 text-gray-800">{{ itinerary.status }}</app-badge>
+          </div>
+        </app-card-header>
+        <app-card-content class="space-y-4">
+          <div class="grid gap-4 md:grid-cols-2">
+            <div class="flex items-center">
+              <app-icon name="map-pin" [size]="20" class="mr-3 text-gray-400" />
+              <div>
+                <p class="text-sm text-gray-500">Destination</p>
+                <p class="font-medium">{{ itinerary.destination || '—' }}</p>
               </div>
             </div>
-          </app-card-content>
-        </app-card>
+            <div class="flex items-center">
+              <app-icon name="calendar" [size]="20" class="mr-3 text-gray-400" />
+              <div>
+                <p class="text-sm text-gray-500">Travel Dates</p>
+                <p class="font-medium">
+                  {{ itinerary.startDate | date }} - {{ itinerary.endDate | date }}
+                  ({{ itinerary.daysCount ?? itinerary.days.length }} days)
+                </p>
+              </div>
+            </div>
+          </div>
 
-        <!-- Final Itinerary -->
-        <app-card>
-          <app-card-header>
-            <app-card-title>Final Itinerary</app-card-title>
-          </app-card-header>
-          <app-card-content>
+          @if (itinerary.totalAmount != null) {
+            <div class="pt-4 border-t">
+              <p class="text-sm text-gray-500">Total Price</p>
+              <p class="text-2xl font-bold text-blue-600">{{ itinerary.totalAmount | currency }}</p>
+            </div>
+          }
+        </app-card-content>
+      </app-card>
+
+      <!-- Final Itinerary -->
+      <app-card>
+        <app-card-header>
+          <app-card-title>Day-by-day Plan</app-card-title>
+        </app-card-header>
+        <app-card-content>
+          @if (itinerary.days.length === 0) {
+            <div class="text-center text-gray-500 py-6">No day details available.</div>
+          } @else {
             <div class="space-y-4">
-              @for (day of itineraryDays; track day.day) {
+              @for (day of itinerary.days; track day.dayNumber) {
                 <div class="border rounded-lg p-4">
                   <div class="flex justify-between items-start mb-2">
-                    <h4 class="font-semibold">Day {{ day.day }}: {{ day.destination }}</h4>
-                    @if (day.accommodation !== '-') {
-                      <span class="text-sm text-gray-500">{{ day.accommodation }}</span>
-                    }
+                    <h4 class="font-semibold">
+                      Day {{ day.dayNumber }}: {{ day.overnightLocation || '—' }}
+                    </h4>
                   </div>
-                  <p class="text-sm text-gray-600">{{ day.activities }}</p>
+                  @if (day.attractions.length > 0) {
+                    <ul class="list-disc list-inside text-sm text-gray-600">
+                      @for (a of day.attractions; track a.name) {
+                        <li>{{ a.name }}</li>
+                      }
+                    </ul>
+                  } @else {
+                    <p class="text-sm text-gray-500">No attractions listed.</p>
+                  }
                 </div>
               }
             </div>
-          </app-card-content>
-        </app-card>
+          }
+        </app-card-content>
+      </app-card>
 
-        <!-- Assigned Staff -->
-        <app-card>
-          <app-card-header>
-            <app-card-title>Assigned Staff & Resources</app-card-title>
-          </app-card-header>
-          <app-card-content class="space-y-4">
-            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div class="flex items-center">
-                <div class="rounded-full bg-blue-100 p-2 mr-3">
-                  <app-icon name="car" [size]="20" class="text-blue-600" />
-                </div>
-                <div>
-                  <p class="font-medium">Driver</p>
-                  <p class="text-sm text-gray-600">Michael Chen</p>
-                </div>
-              </div>
-              <p class="text-sm text-gray-500">+1 234-567-8900</p>
-            </div>
-
-            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div class="flex items-center">
-                <div class="rounded-full bg-purple-100 p-2 mr-3">
-                  <app-icon name="user-check" [size]="20" class="text-purple-600" />
-                </div>
-                <div>
-                  <p class="font-medium">Tour Guide</p>
-                  <p class="text-sm text-gray-600">Emma Thompson</p>
-                </div>
-              </div>
-              <p class="text-sm text-gray-500">English, French</p>
-            </div>
-          </app-card-content>
-        </app-card>
-
-        <!-- Accommodation Details -->
-        <app-card>
-          <app-card-header>
-            <app-card-title class="flex items-center">
-              <app-icon name="home" [size]="20" class="mr-2" />
-              Accommodation Details
-            </app-card-title>
-          </app-card-header>
-          <app-card-content>
-            <div class="space-y-3">
-              <div class="flex justify-between">
-                <span class="text-gray-600">Property:</span>
-                <span class="font-medium">Paradise Island Resort & Spa</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600">Room Type:</span>
-                <span class="font-medium">Water Villa with Private Pool</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600">Meal Plan:</span>
-                <span class="font-medium">All Inclusive</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600">Check-in:</span>
-                <span class="font-medium">Feb 1, 2026 - 2:00 PM</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600">Check-out:</span>
-                <span class="font-medium">Feb 8, 2026 - 12:00 PM</span>
-              </div>
-            </div>
-          </app-card-content>
-        </app-card>
-
-        <!-- Total Price -->
-        <app-card class="border-blue-200 bg-blue-50">
-          <app-card-header>
-            <app-card-title class="flex items-center text-blue-900">
-              <app-icon name="dollar-sign" [size]="20" class="mr-2" />
-              Total Package Price
-            </app-card-title>
-          </app-card-header>
-          <app-card-content>
-            <div class="space-y-2">
-              <div class="flex justify-between text-sm">
-                <span>Accommodation (6 nights)</span>
-                <span>$2,400</span>
-              </div>
-              <div class="flex justify-between text-sm">
-                <span>Transportation</span>
-                <span>$1,200</span>
-              </div>
-              <div class="flex justify-between text-sm">
-                <span>Driver & Guide Fees</span>
-                <span>$1,300</span>
-              </div>
-              <div class="flex justify-between text-sm">
-                <span>Activities & Attractions</span>
-                <span>$450</span>
-              </div>
-              <app-separator class="my-3" />
-              <div class="flex justify-between text-xl font-bold text-blue-900">
-                <span>Total:</span>
-                <span>$5,350.00</span>
-              </div>
-              <p class="text-xs text-blue-700 mt-2">*All taxes and fees included</p>
-            </div>
-          </app-card-content>
-        </app-card>
-
-        <!-- Action Buttons -->
-        <div class="flex justify-end space-x-3">
-          <button class="btn btn-outline" (click)="handleRequestChanges()">
-            <app-icon name="pencil" [size]="16" class="mr-2" />
-            Request Changes
-          </button>
-          <button class="btn btn-primary btn-lg" (click)="handleConfirmBooking()">
-            <app-icon name="circle-check" [size]="16" class="mr-2" />
-            Confirm Booking
-          </button>
-        </div>
+      <!-- Action Buttons -->
+      <div class="rounded-md border bg-gray-50 p-3 text-sm text-gray-700">
+        Editing is disabled on booking summary. Update your itinerary from the itinerary builder.
       </div>
-    </app-layout>
+      <div class="flex justify-end space-x-3">
+        <button class="btn btn-primary btn-lg" (click)="handleConfirmBooking()" [disabled]="isSubmitting">
+          <app-icon name="circle-check" [size]="16" class="mr-2" />
+          @if (isSubmitting) { Working... } @else { Confirm }
+        </button>
+      </div>
+    }
+  </div>
+</app-layout>

@@ -8,23 +8,9 @@ import { TableComponent, TableHeaderComponent, TableBodyComponent, TableRowCompo
 import { DialogComponent, DialogHeaderComponent, DialogTitleComponent } from '../../components/ui/dialog.component';
 import { CalendarComponent } from '../../components/ui/calendar.component';
 import { IconComponent } from '../../components/ui/icons.component';
-
-interface Driver {
-  id: number;
-  name: string;
-  status: 'Available' | 'On Trip' | 'Off Duty';
-  phone: string;
-  experience: string;
-}
-
-interface Guide {
-  id: number;
-  name: string;
-  status: 'Available' | 'On Trip' | 'Off Duty';
-  languages: string;
-  phone: string;
-  experience: string;
-}
+import { StaffService } from '../../services/staff.service';
+import { ToastService } from '../../services/toast.service';
+import type { DriverDto, GuideDto } from '../../models/staff.models';
 
 @Component({
   selector: 'app-staff-management',
@@ -51,28 +37,44 @@ interface Guide {
     CalendarComponent,
     IconComponent
   ],
-  template: `./staff-management.component.html`,
+  templateUrl: './staff-management.component.html',
   styleUrls: ['./staff-management.component.scss']
 })
 export class StaffManagementComponent {
+  constructor(private staffService: StaffService, private toastService: ToastService) {}
+
   activeTab = 'drivers';
   isCalendarDialogOpen = false;
   selectedStaffName = '';
   selectedDate: Date | null = new Date();
 
-  mockDrivers: Driver[] = [
-    { id: 1, name: 'Michael Chen', status: 'Available', phone: '+1 234-567-8900', experience: '5 years' },
-    { id: 2, name: 'Sarah Williams', status: 'On Trip', phone: '+1 234-567-8901', experience: '3 years' },
-    { id: 3, name: 'James Brown', status: 'Available', phone: '+1 234-567-8902', experience: '7 years' },
-    { id: 4, name: 'Linda Davis', status: 'Off Duty', phone: '+1 234-567-8903', experience: '4 years' },
-  ];
+  drivers: DriverDto[] = [];
+  guides: GuideDto[] = [];
+  isLoading = false;
+  errorMessage = '';
 
-  mockGuides: Guide[] = [
-    { id: 1, name: 'Emma Thompson', status: 'Available', languages: 'English, French', phone: '+1 234-567-9000', experience: '6 years' },
-    { id: 2, name: 'Carlos Rodriguez', status: 'On Trip', languages: 'English, Spanish', phone: '+1 234-567-9001', experience: '4 years' },
-    { id: 3, name: 'Yuki Tanaka', status: 'Available', languages: 'English, Japanese', phone: '+1 234-567-9002', experience: '5 years' },
-    { id: 4, name: 'Ahmed Hassan', status: 'Off Duty', languages: 'English, Arabic', phone: '+1 234-567-9003', experience: '8 years' },
-  ];
+  async ngOnInit(): Promise<void> {
+    await this.refresh();
+  }
+
+  async refresh(): Promise<void> {
+    this.isLoading = true;
+    this.errorMessage = '';
+    try {
+      const [drivers, guides] = await Promise.all([
+        this.staffService.getDrivers(),
+        this.staffService.getGuides()
+      ]);
+      this.drivers = drivers ?? [];
+      this.guides = guides ?? [];
+    } catch (e) {
+      console.error(e);
+      this.errorMessage = 'Failed to load staff resources.';
+      this.toastService.error(this.errorMessage);
+    } finally {
+      this.isLoading = false;
+    }
+  }
 
   getStatusBadgeClass(status: string): string {
     switch (status) {

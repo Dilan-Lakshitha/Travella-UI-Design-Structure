@@ -1,7 +1,21 @@
-    <app-layout title="Pending Itinerary Reviews" role="agency">
+    <app-layout title="Pending Itinerary Reviews" role="STAFF">
       <div class="space-y-6">
+        @if (isLoading) {
+          <app-card>
+            <app-card-content class="pt-6 text-center text-gray-500">
+              Loading review queue...
+            </app-card-content>
+          </app-card>
+        }
+        @if (!isLoading && errorMessage) {
+          <app-card>
+            <app-card-content class="pt-6 text-center text-red-600">
+              {{ errorMessage }}
+            </app-card-content>
+          </app-card>
+        }
         <div class="grid gap-4">
-          @for (review of mockPendingReviews; track review.id) {
+          @for (review of pendingReviews; track review.id) {
             <app-card class="hover:shadow-lg transition-shadow">
               <app-card-header>
                 <div class="flex justify-between items-start">
@@ -33,7 +47,7 @@
                   <div class="flex space-x-2 pt-3">
                     <button
                       class="btn btn-outline btn-sm"
-                      (click)="openReviewDialog(review)"
+                      (click)="openReviewDialogWithDetails(review)"
                     >
                       <app-icon name="eye" [size]="16" class="mr-2" />
                       Review Details
@@ -41,9 +55,10 @@
                     <button
                       class="btn btn-primary btn-sm"
                       (click)="handleApprove(review.id)"
+                      [disabled]="busyItineraryIds.has(review.id)"
                     >
                       <app-icon name="circle-check" [size]="16" class="mr-2" />
-                      Quick Approve
+                      @if (busyItineraryIds.has(review.id)) { Working... } @else { Quick Approve }
                     </button>
                   </div>
                 </div>
@@ -89,7 +104,7 @@
             <div>
               <h4 class="font-semibold mb-3">Day-by-Day Plan</h4>
               <div class="space-y-4">
-                @for (day of mockItineraryDetails; track day.day) {
+                @for (day of itineraryDetails; track day.day) {
                   <app-card>
                     <app-card-header class="py-3">
                       <app-card-title class="text-base">Day {{ day.day }}: {{ day.destination }}</app-card-title>
@@ -137,17 +152,17 @@
           </div>
 
           <app-dialog-footer class="flex space-x-2">
-            <button class="btn btn-destructive" (click)="handleReject()">
+            <button class="btn btn-destructive" (click)="handleReject()" [disabled]="busyItineraryIds.has(selectedItinerary.id)">
               <app-icon name="circle-x" [size]="16" class="mr-2" />
-              Reject
+              @if (busyItineraryIds.has(selectedItinerary.id)) { Working... } @else { Reject }
             </button>
-            <button class="btn btn-outline" (click)="handleReturnForCorrection()">
+            <button class="btn btn-outline" (click)="handleReturnForCorrection()" [disabled]="busyItineraryIds.has(selectedItinerary.id)">
               <app-icon name="circle-alert" [size]="16" class="mr-2" />
-              Return for Correction
+              @if (busyItineraryIds.has(selectedItinerary.id)) { Working... } @else { Return for Correction }
             </button>
-            <button class="btn btn-primary" (click)="handleApprove(selectedItinerary.id)">
+            <button class="btn btn-primary" (click)="handleApprove(selectedItinerary.id)" [disabled]="busyItineraryIds.has(selectedItinerary.id)">
               <app-icon name="circle-check" [size]="16" class="mr-2" />
-              Approve & Continue to Pricing
+              @if (busyItineraryIds.has(selectedItinerary.id)) { Working... } @else { Approve & Continue to Pricing }
             </button>
           </app-dialog-footer>
         }

@@ -1,14 +1,17 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { API_BASE_URL, DEFAULT_TRAVELER_COMPANY_ID } from '../config/api.config';
+import type { UserRole } from '../models/itinerary.models';
 
-export type UserRole = 'traveler' | 'staff' | 'admin' | 'super_admin';
+export type { UserRole };
 
 export interface User {
-  userId: number;
-  email: string;
+  userId?: number;
+  email?: string;
   role: UserRole;
   companyId: number | null;
+  isFirstLogin?: boolean;
 }
 
 interface RegisterTravelerRequest {
@@ -16,28 +19,30 @@ interface RegisterTravelerRequest {
   email: string;
   password: string;
   phone?: string;
+  companyId: number;
 }
 
 interface LoginRequest {
   email: string;
   password: string;
-  role?: UserRole;
+  role?: UserRole | string;
 }
 
 interface AuthResponse {
   token: string;
-  userId: number;
-  email: string;
-  role: UserRole;
+  role: UserRole | string;
   companyId: number | null;
-  expiresAtUtc: string;
+  userId?: number;
+  email?: string;
+  expiresAtUtc?: string;
+  isFirstLogin?: boolean;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private readonly apiBaseUrl = 'http://localhost:7094/api/auth';
+  private readonly apiBaseUrl = `${API_BASE_URL}/api/auth`;
   private readonly tokenKey = 'travella.jwt';
   private readonly userKey = 'travella.user';
   private http = inject(HttpClient);
@@ -47,6 +52,7 @@ export class AuthService {
   user = computed(() => this.userSignal());
   isAuthenticated = computed(() => this.isAuthenticatedSignal());
   userRole = computed(() => this.userSignal()?.role ?? null);
+  mustResetPassword = computed(() => Boolean(this.userSignal()?.isFirstLogin));
 
   constructor() {
     const token = localStorage.getItem(this.tokenKey);
@@ -59,6 +65,14 @@ export class AuthService {
     }
   }
 
+  private normalizeRole(role: unknown): UserRole | null {
+    const r = String(role ?? '').toUpperCase().trim();
+    if (r === 'TRAVELER') return 'TRAVELER';
+    if (r === 'STAFF') return 'STAFF';
+    if (r === 'ADMIN') return 'ADMIN';
+    return null;
+  }
+
   async login(email: string, password: string, role: UserRole): Promise<boolean> {
     const payload: LoginRequest = { email, password, role };
 
@@ -68,19 +82,18 @@ export class AuthService {
       );
 
       localStorage.setItem(this.tokenKey, response.token);
-      localStorage.setItem(this.userKey, JSON.stringify({
-        userId: response.userId,
-        email: response.email,
-        role: response.role,
-        companyId: response.companyId
-      }));
+      const normalizedRole = this.normalizeRole(response.role) ?? role;
 
-      this.userSignal.set({
+      const user: User = {
         userId: response.userId,
         email: response.email,
-        role: response.role,
-        companyId: response.companyId
-      });
+        role: normalizedRole,
+        companyId: response.companyId,
+        isFirstLogin: Boolean(response.isFirstLogin)
+      };
+
+      localStorage.setItem(this.userKey, JSON.stringify(user));
+      this.userSignal.set(user);
       this.isAuthenticatedSignal.set(true);
       return true;
     } catch {
@@ -90,7 +103,13 @@ export class AuthService {
   }
 
   async registerTraveler(name: string, email: string, password: string, phone?: string): Promise<boolean> {
-    const payload: RegisterTravelerRequest = { name, email, password, phone };
+    const payload: RegisterTravelerRequest = {
+      name,
+      email,
+      password,
+      phone,
+      companyId: DEFAULT_TRAVELER_COMPANY_ID,
+    };
 
     try {
       const response = await firstValueFrom(
@@ -98,19 +117,18 @@ export class AuthService {
       );
 
       localStorage.setItem(this.tokenKey, response.token);
-      localStorage.setItem(this.userKey, JSON.stringify({
-        userId: response.userId,
-        email: response.email,
-        role: response.role,
-        companyId: response.companyId
-      }));
+      const normalizedRole = this.normalizeRole(response.role) ?? 'TRAVELER';
 
-      this.userSignal.set({
+      const user: User = {
         userId: response.userId,
         email: response.email,
-        role: response.role,
-        companyId: response.companyId
-      });
+        role: normalizedRole,
+        companyId: response.companyId,
+        isFirstLogin: Boolean(response.isFirstLogin)
+      };
+
+      localStorage.setItem(this.userKey, JSON.stringify(user));
+      this.userSignal.set(user);
       this.isAuthenticatedSignal.set(true);
       return true;
     } catch {
@@ -126,14 +144,34 @@ export class AuthService {
     this.isAuthenticatedSignal.set(false);
   }
 
+  async resetPassword(newPassword: string): Promise<void> {
+    const email = this.userSignal()?.email;
+    if (!email) {
+      throw new Error('Missing user email.');
+    }
+
+    await firstValueFrom(
+      this.http.post(`${this.apiBaseUrl}/reset-password`, {
+        email,
+        newPassword
+      })
+    );
+
+    const current = this.userSignal();
+    if (current) {
+      const updated = { ...current, isFirstLogin: false };
+      localStorage.setItem(this.userKey, JSON.stringify(updated));
+      this.userSignal.set(updated);
+    }
+  }
+
   getRedirectUrl(role: UserRole): string {
     switch (role) {
-      case 'traveler':
+      case 'TRAVELER':
         return '/guest/dashboard';
-      case 'staff':
-      case 'admin':
+      case 'STAFF':
         return '/agency/review';
-      case 'super_admin':
+      case 'ADMIN':
         return '/admin/dashboard';
       default:
         return '/login';

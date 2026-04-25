@@ -1,0 +1,1 @@
+import{Ja as p,Ta as i,g as r,l as e,o}from"./chunk-73BIYRRD.js";var m=class t{constructor(s){this.http=s}getDrivers(){return r(this.http.get(`${i}/api/drivers`))}getGuides(){return r(this.http.get(`${i}/api/guides`))}static \u0275fac=function(a){return new(a||t)(o(p))};static \u0275prov=e({token:t,factory:t.\u0275fac,providedIn:"root"})};export{m as a};

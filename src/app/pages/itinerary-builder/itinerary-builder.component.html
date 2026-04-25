@@ -1,6 +1,14 @@
-    <app-layout title="Create Your Itinerary" role="guest">
+    <app-layout title="Create Your Itinerary" role="TRAVELER">
       <div class="max-w-4xl mx-auto space-y-6">
+        @if (isLoadingDraft) {
+          <app-card>
+            <app-card-content class="py-8 text-center text-gray-600">
+              Loading itinerary…
+            </app-card-content>
+          </app-card>
+        }
         <!-- Trip Details -->
+        @if (!isLoadingDraft) {
         <app-card>
           <app-card-header>
             <app-card-title>Trip Details</app-card-title>
@@ -91,10 +99,12 @@
                         </div>
                         @for (attraction of day.attractions; track $index; let i = $index) {
                           <div class="flex space-x-2">
-                            <app-input
-                              placeholder="e.g., Eiffel Tower"
-                              [(ngModel)]="day.attractions[i]"
-                              class="flex-1"
+                            <input
+                              #autoInput
+                              type="text"
+                              class="flex-1 border p-2 rounded"
+                              [value]="day.attractions[i]?.name"
+                              (focus)="initAutocomplete(autoInput, day, i)"
                             />
                             @if (day.attractions.length > 1) {
                               <button
@@ -148,14 +158,15 @@
 
         <!-- Action Buttons -->
         <div class="flex justify-end space-x-3">
-          <button class="btn btn-outline" (click)="handleSaveDraft()">
+          <button type="button" class="btn btn-outline" (click)="handleSaveDraft()">
             <app-icon name="save" [size]="16" class="mr-2" />
             Save Draft
           </button>
-          <button class="btn btn-primary" (click)="handleSubmit()">
+          <button type="button" class="btn btn-primary" (click)="handleSubmit()">
             <app-icon name="send" [size]="16" class="mr-2" />
-            Submit for Review
+            Submit Itinerary
           </button>
         </div>
+        }
       </div>
     </app-layout>

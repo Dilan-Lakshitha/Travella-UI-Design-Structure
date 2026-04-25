@@ -4,9 +4,10 @@ import { Router } from '@angular/router';
 import { LayoutComponent } from '../../components/layout/layout.component';
 import { CardComponent, CardHeaderComponent, CardTitleComponent, CardContentComponent } from '../../components/ui/card.component';
 import { BadgeComponent } from '../../components/ui/badge.component';
-import { SeparatorComponent } from '../../components/ui/separator.component';
 import { IconComponent } from '../../components/ui/icons.component';
 import { ToastService } from '../../services/toast.service';
+import { ItineraryService } from '../../services/itinerary.service';
+import type { ItineraryDto } from '../../models/itinerary.models';
 
 @Component({
   selector: 'app-booking-confirmation',
@@ -19,10 +20,9 @@ import { ToastService } from '../../services/toast.service';
     CardTitleComponent,
     CardContentComponent,
     BadgeComponent,
-    SeparatorComponent,
     IconComponent
   ],
-  template: `./booking-confirmation.component.html`,
+  templateUrl: './booking-confirmation.component.html',
   styleUrls: ['./booking-confirmation.component.scss']
 })
 export class BookingConfirmationComponent {
@@ -30,23 +30,53 @@ export class BookingConfirmationComponent {
   
   private router = inject(Router);
   private toastService = inject(ToastService);
+  private itineraryService = inject(ItineraryService);
 
-  itineraryDays = [
-    { day: 1, destination: 'Male, Maldives', activities: 'Arrival, Resort Check-in, Beach Welcome Dinner', accommodation: 'Water Villa' },
-    { day: 2, destination: 'Male, Maldives', activities: 'Snorkeling Tour, Sunset Cruise', accommodation: 'Water Villa' },
-    { day: 3, destination: 'Male, Maldives', activities: 'Spa Day, Private Beach Time', accommodation: 'Water Villa' },
-    { day: 4, destination: 'Male, Maldives', activities: 'Scuba Diving, Island Hopping', accommodation: 'Water Villa' },
-    { day: 5, destination: 'Male, Maldives', activities: 'Dolphin Watching, Beach Activities', accommodation: 'Water Villa' },
-    { day: 6, destination: 'Male, Maldives', activities: 'Underwater Restaurant Lunch, Relaxation', accommodation: 'Water Villa' },
-    { day: 7, destination: 'Male, Maldives', activities: 'Departure', accommodation: '-' },
-  ];
+  itinerary: ItineraryDto | null = null;
+  isLoading = false;
+  errorMessage = '';
+  isSubmitting = false;
 
-  handleConfirmBooking(): void {
-    this.toastService.success('Booking confirmed! You will receive confirmation email shortly.');
-    setTimeout(() => this.router.navigate(['/guest/dashboard']), 2000);
+  async ngOnInit(): Promise<void> {
+    await this.refresh();
   }
 
-  handleRequestChanges(): void {
-    this.toastService.info('Change request sent to travel expert');
+  async refresh(): Promise<void> {
+    const itineraryId = Number(this.id);
+    if (!Number.isFinite(itineraryId) || itineraryId <= 0) {
+      this.errorMessage = 'Invalid itinerary id.';
+      return;
+    }
+
+    this.isLoading = true;
+    this.errorMessage = '';
+    try {
+      this.itinerary = await this.itineraryService.getItinerary(itineraryId);
+    } catch (e) {
+      console.error(e);
+      this.errorMessage = 'Failed to load itinerary.';
+    } finally {
+      this.isLoading = false;
+    }
   }
+
+  async handleConfirmBooking(): Promise<void> {
+    const itineraryId = Number(this.id);
+    if (!Number.isFinite(itineraryId) || itineraryId <= 0) return;
+    if (this.isSubmitting) return;
+
+    this.isSubmitting = true;
+    try {
+      await this.itineraryService.confirmItinerary(itineraryId);
+      this.toastService.success('Itinerary confirmed.');
+      await this.refresh();
+      setTimeout(() => this.router.navigate(['/guest/dashboard']), 1000);
+    } catch (e) {
+      console.error(e);
+      this.toastService.error('Failed to confirm itinerary.');
+    } finally {
+      this.isSubmitting = false;
+    }
+  }
+
 }

@@ -1,9 +1,14 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { LayoutComponent } from '../../components/layout/layout.component';
 import { CardComponent, CardHeaderComponent, CardTitleComponent, CardDescriptionComponent, CardContentComponent } from '../../components/ui/card.component';
 import { IconComponent } from '../../components/ui/icons.component';
+import { BadgeComponent } from '../../components/ui/badge.component';
+import { ToastService } from '../../services/toast.service';
+import { ItineraryService } from '../../services/itinerary.service';
+import { StaffService } from '../../services/staff.service';
+import type { CompanyItineraryRow } from '../../models/itinerary.models';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -16,11 +21,27 @@ import { IconComponent } from '../../components/ui/icons.component';
     CardTitleComponent,
     CardDescriptionComponent,
     CardContentComponent,
-    IconComponent
+    IconComponent,
+    BadgeComponent
   ],
   template: `
-    <app-layout title="System Overview" role="admin">
+    <app-layout title="System Overview" role="ADMIN">
       <div class="space-y-6">
+        @if (isLoading) {
+          <app-card>
+            <app-card-content class="pt-6 text-center text-gray-500">
+              Loading company itineraries...
+            </app-card-content>
+          </app-card>
+        }
+        @if (!isLoading && errorMessage) {
+          <app-card>
+            <app-card-content class="pt-6 text-center text-red-600">
+              {{ errorMessage }}
+            </app-card-content>
+          </app-card>
+        }
+
         <!-- Key Metrics -->
         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <app-card>
@@ -29,214 +50,289 @@ import { IconComponent } from '../../components/ui/icons.component';
               <app-icon name="file-text" [size]="16" class="text-muted-foreground" />
             </app-card-header>
             <app-card-content>
-              <div class="text-2xl font-bold">85</div>
-              <p class="text-xs text-muted-foreground">+12% from last month</p>
+              <div class="text-2xl font-bold">{{ itineraries.length }}</div>
+              <p class="text-xs text-muted-foreground">Across all statuses</p>
             </app-card-content>
           </app-card>
 
           <app-card>
             <app-card-header class="flex flex-row items-center justify-between space-y-0 pb-2">
-              <app-card-title class="text-sm font-medium">Active Bookings</app-card-title>
-              <app-icon name="calendar" [size]="16" class="text-muted-foreground" />
+              <app-card-title class="text-sm font-medium">Pending Admin</app-card-title>
+              <app-icon name="clock" [size]="16" class="text-muted-foreground" />
             </app-card-header>
             <app-card-content>
-              <div class="text-2xl font-bold">30</div>
-              <p class="text-xs text-muted-foreground">Currently in progress</p>
+              <div class="text-2xl font-bold">{{ pendingAdmin.length }}</div>
+              <p class="text-xs text-muted-foreground">Sent to admin for decision</p>
             </app-card-content>
           </app-card>
 
           <app-card>
             <app-card-header class="flex flex-row items-center justify-between space-y-0 pb-2">
-              <app-card-title class="text-sm font-medium">Total Revenue</app-card-title>
-              <app-icon name="dollar-sign" [size]="16" class="text-muted-foreground" />
+              <app-card-title class="text-sm font-medium">Awaiting Confirm</app-card-title>
+              <app-icon name="circle-check" [size]="16" class="text-muted-foreground" />
             </app-card-header>
             <app-card-content>
-              <div class="text-2xl font-bold">$381,000</div>
-              <p class="text-xs text-muted-foreground">+24% from last month</p>
+              <div class="text-2xl font-bold">{{ awaitingConfirm.length }}</div>
+              <p class="text-xs text-muted-foreground">Approved by admin</p>
             </app-card-content>
           </app-card>
 
           <app-card>
             <app-card-header class="flex flex-row items-center justify-between space-y-0 pb-2">
-              <app-card-title class="text-sm font-medium">Staff Members</app-card-title>
+              <app-card-title class="text-sm font-medium">Staff Resources</app-card-title>
               <app-icon name="users" [size]="16" class="text-muted-foreground" />
             </app-card-header>
             <app-card-content>
-              <div class="text-2xl font-bold">24</div>
-              <p class="text-xs text-muted-foreground">8 drivers, 16 guides</p>
+              <div class="text-2xl font-bold">{{ staffCount }}</div>
+              <p class="text-xs text-muted-foreground">{{ driverCount }} drivers, {{ guideCount }} guides</p>
             </app-card-content>
           </app-card>
         </div>
 
-        <!-- Charts Row -->
-        <div class="grid gap-4 md:grid-cols-2">
-          <!-- Monthly Bookings Chart -->
-          <app-card>
-            <app-card-header>
-              <app-card-title>Monthly Bookings</app-card-title>
-              <app-card-description>Number of bookings per month</app-card-description>
-            </app-card-header>
-            <app-card-content>
-              <div class="h-[300px] flex items-end justify-between gap-2 pt-4">
-                @for (data of monthlyBookingsData; track data.month) {
-                  <div class="flex flex-col items-center gap-2 flex-1">
-                    <div
-                      class="w-full bg-blue-500 rounded-t transition-all"
-                      [style.height.px]="data.bookings * 3"
-                    ></div>
-                    <span class="text-xs text-muted-foreground">{{ data.month }}</span>
+        <app-card>
+          <app-card-header>
+            <app-card-title>Submitted itineraries (all agencies)</app-card-title>
+            <app-card-description>Every submitted itinerary in the system (owner view)</app-card-description>
+          </app-card-header>
+          <app-card-content>
+            @if (ownerSubmitted.length === 0) {
+              <div class="text-center text-gray-500 py-4">No submitted itineraries.</div>
+            } @else {
+              <div class="space-y-2 max-h-72 overflow-y-auto">
+                @for (row of ownerSubmitted; track row.id) {
+                  <div class="flex flex-wrap items-center justify-between gap-2 border rounded-md p-3 text-sm">
+                    <div class="min-w-0">
+                      <div class="font-medium truncate">{{ row.tripName }}</div>
+                      <div class="text-gray-600 truncate">
+                        {{ row.guestName }} · {{ row.destination }} · {{ row.daysCount }} days
+                        @if (row.companyId) {
+                          <span> · Company #{{ row.companyId }}</span>
+                        }
+                      </div>
+                    </div>
+                    <app-badge class="bg-green-100 text-green-800">{{ row.rawStatus }}</app-badge>
                   </div>
                 }
               </div>
-            </app-card-content>
-          </app-card>
-
-          <!-- Status Distribution -->
-          <app-card>
-            <app-card-header>
-              <app-card-title>Itinerary Status Distribution</app-card-title>
-              <app-card-description>Current status breakdown</app-card-description>
-            </app-card-header>
-            <app-card-content>
-              <div class="flex items-center justify-center h-[300px]">
-                <div class="grid grid-cols-2 gap-4">
-                  @for (data of statusData; track data.name) {
-                    <div class="flex items-center gap-2">
-                      <div
-                        class="w-4 h-4 rounded-full"
-                        [style.backgroundColor]="data.color"
-                      ></div>
-                      <span class="text-sm">{{ data.name }}: {{ data.value }}</span>
-                    </div>
-                  }
-                </div>
-              </div>
-            </app-card-content>
-          </app-card>
-        </div>
-
-        <!-- Revenue Chart -->
-        <app-card>
-          <app-card-header>
-            <app-card-title>Revenue Trend</app-card-title>
-            <app-card-description>Monthly revenue over time</app-card-description>
-          </app-card-header>
-          <app-card-content>
-            <div class="h-[300px] flex items-end justify-between gap-4 pt-4">
-              @for (data of revenueData; track data.month) {
-                <div class="flex flex-col items-center gap-2 flex-1">
-                  <div
-                    class="w-full bg-green-500 rounded-t transition-all"
-                    [style.height.px]="data.revenue / 400"
-                  ></div>
-                  <span class="text-xs text-muted-foreground">{{ data.month }}</span>
-                  <span class="text-xs font-medium">{{'$' + (data.revenue / 1000) + 'k'}}</span>
-                </div>
-              }
-            </div>
+            }
           </app-card-content>
         </app-card>
 
-        <!-- Recent Activities & Quick Actions -->
-        <div class="grid gap-4 md:grid-cols-3">
-          <!-- Recent Activities -->
-          <app-card class="md:col-span-2">
-            <app-card-header>
-              <app-card-title>Recent Activities</app-card-title>
-              <app-card-description>Latest system activities and updates</app-card-description>
-            </app-card-header>
-            <app-card-content>
-              <div class="space-y-4">
-                @for (activity of recentActivities; track activity.id) {
-                  <div class="flex items-start space-x-4">
-                    <div [class]="'rounded-full p-2 ' + (activity.type === 'success' ? 'bg-green-100' : 'bg-blue-100')">
-                      <app-icon
-                        [name]="activity.type === 'success' ? 'circle-check' : 'clock'"
-                        [size]="16"
-                        [class]="activity.type === 'success' ? 'text-green-600' : 'text-blue-600'"
-                      />
+        <app-card>
+          <app-card-header>
+            <app-card-title>Approved Itineraries</app-card-title>
+            <app-card-description>Review price and adjust margin before final confirmation.</app-card-description>
+          </app-card-header>
+          <app-card-content>
+            @if (approvedItineraries.length === 0) {
+              <div class="text-center text-gray-500 py-4">No approved itineraries.</div>
+            } @else {
+              <div class="space-y-2">
+                @for (row of approvedItineraries; track row.id) {
+                  <div class="border rounded-md p-3 flex items-center justify-between gap-2">
+                    <div class="text-sm">
+                      <div class="font-medium">{{ row.tripName }}</div>
+                      <div class="text-gray-600">{{ row.guestName }} · {{ row.destination }}</div>
+                      <div class="text-gray-700">Price: {{ row.totalAmount ?? 0 | currency }}</div>
                     </div>
-                    <div class="flex-1">
-                      <p class="text-sm font-medium">{{ activity.action }}</p>
-                      <p class="text-xs text-gray-500">{{ activity.user }} - {{ activity.time }}</p>
+                    <button class="btn btn-outline btn-sm" (click)="updateMargin(row.id)">Update Margin</button>
+                  </div>
+                }
+              </div>
+            }
+          </app-card-content>
+        </app-card>
+
+        <!-- Admin Actions -->
+        <app-card>
+          <app-card-header>
+            <app-card-title>Pending Admin Actions</app-card-title>
+            <app-card-description>Approve, reject, or confirm itineraries in your queue</app-card-description>
+          </app-card-header>
+          <app-card-content>
+            @if (pendingAdmin.length === 0 && awaitingConfirm.length === 0) {
+              <div class="text-center text-gray-500 py-6">No admin actions pending.</div>
+            } @else {
+              <div class="space-y-3">
+                @for (row of pendingAdmin; track row.id) {
+                  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border rounded-lg p-4">
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-2">
+                        <div class="font-semibold truncate">{{ row.tripName }}</div>
+                        <app-badge class="bg-yellow-100 text-yellow-800">SENT_TO_ADMIN</app-badge>
+                      </div>
+                      <div class="text-sm text-gray-600 truncate">
+                        Guest: {{ row.guestName }} · {{ row.destination }} · {{ row.daysCount }} days
+                      </div>
+                    </div>
+                    <div class="flex gap-2">
+                      <button class="btn btn-primary btn-sm" (click)="approveFinal(row.id)" [disabled]="busyIds.has(row.id)">
+                        @if (busyIds.has(row.id)) { Working... } @else { Approve Final }
+                      </button>
+                      <button class="btn btn-outline btn-sm" (click)="reject(row.id)" [disabled]="busyIds.has(row.id)">
+                        Reject
+                      </button>
+                      <button class="btn btn-outline btn-sm" (click)="navigateTo('/admin/itineraries')">
+                        View
+                      </button>
+                    </div>
+                  </div>
+                }
+
+                @for (row of awaitingConfirm; track row.id) {
+                  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border rounded-lg p-4">
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-2">
+                        <div class="font-semibold truncate">{{ row.tripName }}</div>
+                        <app-badge class="bg-green-100 text-green-800">APPROVED_BY_ADMIN</app-badge>
+                      </div>
+                      <div class="text-sm text-gray-600 truncate">
+                        Guest: {{ row.guestName }} · {{ row.destination }} · {{ row.daysCount }} days
+                      </div>
+                    </div>
+                    <div class="flex gap-2">
+                      <button class="btn btn-primary btn-sm" (click)="confirm(row.id)" [disabled]="busyIds.has(row.id)">
+                        @if (busyIds.has(row.id)) { Working... } @else { Confirm }
+                      </button>
+                      <button class="btn btn-outline btn-sm" (click)="reject(row.id)" [disabled]="busyIds.has(row.id)">
+                        Reject
+                      </button>
+                      <button class="btn btn-outline btn-sm" (click)="navigateTo('/admin/itineraries')">
+                        View
+                      </button>
                     </div>
                   </div>
                 }
               </div>
-            </app-card-content>
-          </app-card>
-
-          <!-- Quick Actions -->
-          <app-card>
-            <app-card-header>
-              <app-card-title>Quick Actions</app-card-title>
-              <app-card-description>Common tasks and shortcuts</app-card-description>
-            </app-card-header>
-            <app-card-content class="space-y-2">
-              <button class="btn btn-outline w-full justify-start" (click)="navigateTo('/admin/itineraries')">
-                <app-icon name="file-text" [size]="16" class="mr-2" />
-                View All Itineraries
-              </button>
-              <button class="btn btn-outline w-full justify-start" (click)="navigateTo('/agency/review')">
-                <app-icon name="clock" [size]="16" class="mr-2" />
-                Pending Reviews
-              </button>
-              <button class="btn btn-outline w-full justify-start" (click)="navigateTo('/agency/staff')">
-                <app-icon name="users" [size]="16" class="mr-2" />
-                Manage Staff
-              </button>
-              <button class="btn btn-outline w-full justify-start">
-                <app-icon name="trending-up" [size]="16" class="mr-2" />
-                Financial Reports
-              </button>
-              <button class="btn btn-outline w-full justify-start">
-                <app-icon name="settings" [size]="16" class="mr-2" />
-                System Settings
-              </button>
-            </app-card-content>
-          </app-card>
-        </div>
+            }
+          </app-card-content>
+        </app-card>
       </div>
     </app-layout>
   `
 })
-export class AdminDashboardComponent {
+export class AdminDashboardComponent implements OnInit {
   private router = inject(Router);
 
-  monthlyBookingsData = [
-    { month: 'Jan', bookings: 45 },
-    { month: 'Feb', bookings: 52 },
-    { month: 'Mar', bookings: 61 },
-    { month: 'Apr', bookings: 58 },
-    { month: 'May', bookings: 70 },
-    { month: 'Jun', bookings: 85 },
-  ];
+  private toastService = inject(ToastService);
+  private itineraryService = inject(ItineraryService);
+  private staffService = inject(StaffService);
 
-  statusData = [
-    { name: 'Draft', value: 12, color: '#94a3b8' },
-    { name: 'Submitted', value: 18, color: '#3b82f6' },
-    { name: 'Approved', value: 25, color: '#22c55e' },
-    { name: 'Confirmed', value: 30, color: '#a855f7' },
-  ];
+  itineraries: CompanyItineraryRow[] = [];
+  ownerSubmitted: CompanyItineraryRow[] = [];
+  isLoading = false;
+  errorMessage = '';
+  busyIds = new Set<number>();
 
-  revenueData = [
-    { month: 'Jan', revenue: 45000 },
-    { month: 'Feb', revenue: 52000 },
-    { month: 'Mar', revenue: 61000 },
-    { month: 'Apr', revenue: 58000 },
-    { month: 'May', revenue: 70000 },
-    { month: 'Jun', revenue: 95000 },
-  ];
+  driverCount = 0;
+  guideCount = 0;
 
-  recentActivities = [
-    { id: 1, action: 'New booking confirmed', user: 'John Doe', time: '5 minutes ago', type: 'success' },
-    { id: 2, action: 'Itinerary submitted for review', user: 'Jane Smith', time: '15 minutes ago', type: 'info' },
-    { id: 3, action: 'Payment received', user: 'Mike Johnson', time: '1 hour ago', type: 'success' },
-    { id: 4, action: 'Guide assigned to tour', user: 'Emma Thompson', time: '2 hours ago', type: 'info' },
-    { id: 5, action: 'New user registered', user: 'Sarah Williams', time: '3 hours ago', type: 'info' },
-  ];
+  get staffCount(): number {
+    return this.driverCount + this.guideCount;
+  }
+
+  get pendingAdmin(): CompanyItineraryRow[] {
+    return this.itineraries.filter(i => String(i.rawStatus ?? '').toLowerCase() === 'sent_to_admin');
+  }
+
+  get awaitingConfirm(): CompanyItineraryRow[] {
+    return this.itineraries.filter(i => String(i.rawStatus ?? '').toLowerCase() === 'approved_by_admin');
+  }
+
+  get approvedItineraries(): CompanyItineraryRow[] {
+    return this.itineraries.filter(i => String(i.rawStatus ?? '').toLowerCase() === 'approved_by_admin');
+  }
+
+  async ngOnInit(): Promise<void> {
+    await this.refresh();
+  }
+
+  async refresh(): Promise<void> {
+    this.isLoading = true;
+    this.errorMessage = '';
+    try {
+      const [itins, ownerRows, drivers, guides] = await Promise.all([
+        this.itineraryService.getCompanyItineraries(),
+        this.itineraryService.getOwnerSubmittedItineraries().catch(() => [] as CompanyItineraryRow[]),
+        this.staffService.getDrivers(),
+        this.staffService.getGuides()
+      ]);
+      this.itineraries = itins ?? [];
+      this.ownerSubmitted = ownerRows ?? [];
+      this.driverCount = (drivers ?? []).length;
+      this.guideCount = (guides ?? []).length;
+    } catch (e) {
+      console.error(e);
+      this.errorMessage = 'Failed to load admin dashboard data.';
+    } finally {
+      this.isLoading = false;
+    }
+  }
 
   navigateTo(path: string): void {
     this.router.navigate([path]);
+  }
+
+  async approveFinal(itineraryId: number): Promise<void> {
+    if (this.busyIds.has(itineraryId)) return;
+    this.busyIds.add(itineraryId);
+    try {
+      await this.itineraryService.adminApprove(itineraryId);
+      this.toastService.success('Approved by admin.');
+      await this.refresh();
+    } catch (e) {
+      console.error(e);
+      this.toastService.error('Failed to approve.');
+    } finally {
+      this.busyIds.delete(itineraryId);
+    }
+  }
+
+  async confirm(itineraryId: number): Promise<void> {
+    if (this.busyIds.has(itineraryId)) return;
+    this.busyIds.add(itineraryId);
+    try {
+      await this.itineraryService.confirmItinerary(itineraryId);
+      this.toastService.success('Itinerary confirmed.');
+      await this.refresh();
+    } catch (e) {
+      console.error(e);
+      this.toastService.error('Failed to confirm.');
+    } finally {
+      this.busyIds.delete(itineraryId);
+    }
+  }
+
+  async reject(itineraryId: number): Promise<void> {
+    if (this.busyIds.has(itineraryId)) return;
+    this.busyIds.add(itineraryId);
+    try {
+      await this.itineraryService.adminReject(itineraryId);
+      this.toastService.error('Itinerary rejected.');
+      await this.refresh();
+    } catch (e) {
+      console.error(e);
+      this.toastService.error('Failed to reject.');
+    } finally {
+      this.busyIds.delete(itineraryId);
+    }
+  }
+
+  async updateMargin(itineraryId: number): Promise<void> {
+    const value = prompt('Enter new profit margin (%)');
+    if (value == null) return;
+    const margin = Number(value);
+    if (!Number.isFinite(margin)) {
+      this.toastService.error('Invalid margin value.');
+      return;
+    }
+    try {
+      await this.itineraryService.updatePricingMargin(itineraryId, margin);
+      this.toastService.success('Margin updated.');
+      await this.refresh();
+    } catch (e) {
+      console.error(e);
+      this.toastService.error('Failed to update margin.');
+    }
   }
 }

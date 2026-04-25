@@ -1,9 +1,8 @@
 import { Component, Input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { Router } from '@angular/router';
 import { AuthService, UserRole } from '../../services/auth.service';
 import { IconComponent } from '../ui/icons.component';
-import { ButtonComponent } from '../ui/button.component';
 
 interface NavItem {
   icon: string;
@@ -14,33 +13,35 @@ interface NavItem {
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, IconComponent, ButtonComponent],
-  template: "./layout.component.html",
+  imports: [CommonModule, IconComponent],
+  templateUrl: './layout.component.html',
   styleUrls: ["./layout.component.scss"],
 })
 export class LayoutComponent {
   @Input() title = '';
-  @Input() role: UserRole = 'traveler';
+  @Input() role: UserRole = 'TRAVELER';
 
   private router = inject(Router);
   private authService = inject(AuthService);
 
   get navItems(): NavItem[] {
-    if (this.role === 'traveler') {
+    if (this.role === 'TRAVELER') {
       return [
-        { icon: 'home', label: 'Dashboard', path: '/traveler/dashboard' },
-        { icon: 'calendar', label: 'Create Itinerary', path: '/traveler/itinerary-builder' },
+        { icon: 'home', label: 'Dashboard', path: '/guest/dashboard' },
+        { icon: 'calendar', label: 'Create Itinerary', path: '/guest/itinerary-builder' },
       ];
-    } else if (this.role === 'staff') {
+    } else if (this.role === 'STAFF') {
       return [
         { icon: 'file-text', label: 'Review Queue', path: '/agency/review' },
-        { icon: 'users', label: 'Staff Management', path: '/agency/staff' },
+        { icon: 'users', label: 'Resources', path: '/agency/staff' },
       ];
     } else {
       return [
         { icon: 'home', label: 'Dashboard', path: '/admin/dashboard' },
         { icon: 'file-text', label: 'All Itineraries', path: '/admin/itineraries' },
-        { icon: 'users', label: 'Staff', path: '/agency/staff' },
+        { icon: 'users', label: 'Staff Users', path: '/admin/staff' },
+        { icon: 'car', label: 'Drivers', path: '/admin/drivers' },
+        { icon: 'user', label: 'Guides', path: '/admin/guides' },
       ];
     }
   }
