@@ -73,7 +73,7 @@ export class GuestDashboardComponent {
   }
 
   get correctedItineraries(): GuestItineraryRow[] {
-    return this.itineraries.filter(i => ['returned', 'returned_for_correction', 'corrected'].includes(this.normalizeStatus(i.status)));
+    return this.itineraries.filter(i => ['returned', 'returned_for_correction', 'corrected', 'resubmitted'].includes(this.normalizeStatus(i.status)));
   }
 
   get approvedItineraries(): GuestItineraryRow[] {
@@ -90,6 +90,8 @@ export class GuestDashboardComponent {
       confirmed: 'bg-purple-100 text-purple-800',
       corrected: 'bg-red-100 text-red-800',
       returned: 'bg-red-100 text-red-800',
+      returned_for_correction: 'bg-red-100 text-red-800',
+      resubmitted: 'bg-orange-100 text-orange-800',
       rejected: 'bg-red-100 text-red-800'
     };
     if (normalized === 'approved_by_staff' || normalized === 'approved_by_admin') return colors['approved'];

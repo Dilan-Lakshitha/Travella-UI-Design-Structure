@@ -64,6 +64,15 @@ interface Itinerary {
                 <app-badge [class]="getStatusColor(itinerary.status)">
                   {{ itinerary.status }}
                 </app-badge>
+                @if (itinerary.rawStatus === 'confirmed') {
+                  <app-badge class="bg-green-100 text-green-800">Confirmed</app-badge>
+                } @else if (itinerary.rawStatus === 'approved_by_admin') {
+                  <app-badge class="bg-blue-100 text-blue-800">Approved</app-badge>
+                } @else if (itinerary.rawStatus === 'returned_for_correction') {
+                  <app-badge class="bg-red-100 text-red-800">Returned</app-badge>
+                } @else if (itinerary.rawStatus === 'resubmitted') {
+                  <app-badge class="bg-orange-100 text-orange-800">Resubmitted</app-badge>
+                }
                 <div class="mt-3 flex gap-2">
                   @if (itinerary.rawStatus === 'sent_to_admin') {
                     <button class="btn btn-primary btn-sm" (click)="handleApproveFinal(itinerary.id)">
@@ -79,6 +88,9 @@ interface Itinerary {
                     <button class="btn btn-outline btn-sm" (click)="handleReject(itinerary.id)">
                       Reject
                     </button>
+                  }
+                  @if (itinerary.rawStatus === 'confirmed') {
+                    <span class="text-sm text-gray-500 italic">All actions completed</span>
                   }
                 </div>
               </div>

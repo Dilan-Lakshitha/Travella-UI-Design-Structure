@@ -184,7 +184,7 @@ import type { CompanyItineraryRow } from '../../models/itinerary.models';
                     <div class="min-w-0">
                       <div class="flex items-center gap-2">
                         <div class="font-semibold truncate">{{ row.tripName }}</div>
-                        <app-badge class="bg-green-100 text-green-800">APPROVED_BY_ADMIN</app-badge>
+                        <app-badge class="bg-blue-100 text-blue-800">Approved</app-badge>
                       </div>
                       <div class="text-sm text-gray-600 truncate">
                         Guest: {{ row.guestName }} · {{ row.destination }} · {{ row.daysCount }} days

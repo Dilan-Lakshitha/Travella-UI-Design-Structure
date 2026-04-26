@@ -97,7 +97,7 @@
 
         <!-- Returned for Correction -->
         <div>
-          <h3 class="text-lg font-semibold mb-4">Returned for Correction</h3>
+          <h3 class="text-lg font-semibold mb-4">Returned for Correction / Resubmitted</h3>
           @if (correctedItineraries.length === 0) {
             <app-card>
               <app-card-content class="pt-6 text-center text-gray-500">
@@ -109,12 +109,20 @@
               @for (itinerary of correctedItineraries; track itinerary.id) {
                 <app-itinerary-card
                   [item]="itinerary"
-                  [statusLabel]="'Returned for Correction'"
-                  [statusClass]="getStatusColor('returned')"
+                  [statusLabel]="formatStatus(itinerary.status)"
+                  [statusClass]="getStatusColor(itinerary.status)"
                 >
-                  <div class="text-sm text-red-600">Returned with requested changes. Update and resubmit.</div>
+                  <div class="text-sm" [class]="itinerary.status === 'resubmitted' ? 'text-orange-600' : 'text-red-600'">
+                    @if (itinerary.status === 'returned_for_correction') {
+                      Returned with requested changes. Update and resubmit.
+                    } @else {
+                      Resubmitted and waiting for review.
+                    }
+                  </div>
                   <div class="flex gap-2">
-                    <button class="btn btn-primary btn-sm flex-1" (click)="navigateToEditItinerary(itinerary.id)">Edit Itinerary</button>
+                    @if (itinerary.status === 'returned_for_correction') {
+                      <button class="btn btn-primary btn-sm flex-1" (click)="navigateToEditItinerary(itinerary.id)">Edit Itinerary</button>
+                    }
                     <button class="btn btn-outline btn-sm flex-1" (click)="openConversation(itinerary.id)">View Conversation</button>
                   </div>
                 </app-itinerary-card>

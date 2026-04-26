@@ -30,8 +30,8 @@ interface DayPlan {
   dayNumber: number;
   destination: string;
   attractions: any[];
-  mealPlan: string;
-  accommodation: string;
+  mealPlan: string | null;
+  accommodation: string | null;
   expanded: boolean;
 }
 declare var google: any;
@@ -94,20 +94,22 @@ export class ItineraryBuilderComponent implements OnInit {
     },
   ];
 
-  mealPlanOptions: SelectOption[] = [
-    { value: "BB", label: "Bed & Breakfast (BB)" },
-    { value: "HB", label: "Half Board (HB)" },
-    { value: "FB", label: "Full Board (FB)" },
-    { value: "AI", label: "All Inclusive (AI)" },
-  ];
+  mealPlanOptions = [
+  { value: null, label: 'No Meal Plan' }, 
+  { value: 'BB', label: 'Bed & Breakfast (BB)' },
+  { value: 'HB', label: 'Half Board (HB)' },
+  { value: 'FB', label: 'Full Board (FB)' },
+  { value: 'AI', label: 'All Inclusive (AI)' }
+];
 
-  accommodationOptions: SelectOption[] = [
-    { value: "hotel", label: "Hotel" },
-    { value: "resort", label: "Resort" },
-    { value: "hostel", label: "Hostel" },
-    { value: "villa", label: "Villa" },
-    { value: "apartment", label: "Apartment" },
-  ];
+  accommodationOptions = [
+  { value: null, label: 'No Accommodation' },
+  { value: 'Hotel', label: 'Hotel' },
+  { value: 'Resort', label: 'Resort' },
+  { value: 'Hostel', label: 'Hostel' },
+  { value: 'Villa', label: 'Villa' },
+  { value: 'Apartment', label: 'Apartment' }
+];
 
   private guestBase(): string {
     return this.router.url.includes("/traveler/") ? "/traveler" : "/guest";
@@ -216,8 +218,8 @@ export class ItineraryBuilderComponent implements OnInit {
           id: null,
         },
       ],
-      mealPlan: "BB",
-      accommodation: "",
+      mealPlan: null,
+      accommodation: null,
       expanded: true,
     };
     this.days.push(newDay);
