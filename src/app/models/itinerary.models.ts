@@ -1,5 +1,7 @@
 export type UserRole = 'TRAVELER' | 'STAFF' | 'ADMIN';
 
+export type TravelerDashboardTab = 'draft' | 'submitted' | 'returned' | 'approved' | 'rejected';
+
 export type ItineraryStatus =
   | 'DRAFT'
   | 'SUBMITTED'
@@ -32,10 +34,8 @@ export interface ItineraryDto {
   id: number;
   startDate: string;
   endDate: string;
-  status: string; // backend string; UI can map to badges
+  status: string;
   days: DayDto[];
-
-  // Optional fields returned by list endpoints / expanded DTOs
   tripName?: string;
   destination?: string;
   daysCount?: number;
@@ -43,11 +43,11 @@ export interface ItineraryDto {
   submittedDate?: string;
   rawStatus?: string;
   totalAmount?: number;
+  pricing?: ItineraryPricingDetail | null;
   driverId?: number | null;
   guideId?: number | null;
 }
 
-/** GET /api/itinerary/{id} full payload */
 export interface ItineraryFullApiResponse {
   itinerary: {
     id: number;
@@ -59,6 +59,7 @@ export interface ItineraryFullApiResponse {
     totalPrice: number;
     companyId: number | null;
   };
+  pricing?: ItineraryPricingDetail | null;
   days: Array<{ id: number; dayNumber: number; overnightLocation: string }>;
   attractions: Array<{
     id: number;
@@ -112,6 +113,23 @@ export interface ItineraryPricingPayload {
   totalAmount: number;
 }
 
+export interface ItineraryPricingDetail {
+  id: number;
+  itineraryId: number;
+  createdBy: number;
+  driverCost: number;
+  guideCost: number;
+  vehicleCost: number;
+  mileageRate: number;
+  totalKm: number;
+  accommodationCost: number;
+  mealPlan: string;
+  profitMargin: number;
+  totalAmount: number;
+  status: string;
+  createdAt: string;
+}
+
 export interface GuestItineraryRow {
   id: number;
   tripName: string;
@@ -119,10 +137,21 @@ export interface GuestItineraryRow {
   startDate: string;
   endDate: string;
   status: string;
+  rawStatus?: string;
   daysCount: number;
   totalPrice?: number | null;
+  submittedDate?: string | null;
   lastMessagePreview?: string | null;
 }
+
+export type StaffItineraryTab =
+  | 'pending'
+  | 'in-review'
+  | 'returned'
+  | 'priced'
+  | 'approved'
+  | 'completed'
+  | 'rejected';
 
 export interface AgencyReviewRow {
   id: number;
@@ -132,8 +161,12 @@ export interface AgencyReviewRow {
   startDate: string;
   endDate: string;
   daysCount: number;
-  submittedDate: string;
+  submittedDate?: string | null;
   status: string;
+  rawStatus?: string;
+  totalPrice?: number | null;
+  lastMessagePreview?: string | null;
+  pricing?: ItineraryPricingDetail | null;
 }
 
 export interface CompanyItineraryRow {
@@ -147,17 +180,67 @@ export interface CompanyItineraryRow {
   rawStatus: string;
   daysCount: number;
   totalAmount?: number;
+  totalPrice?: number | null;
   companyId?: number | null;
   profitMargin?: number | null;
+  submittedDate?: string | null;
+  lastMessagePreview?: string | null;
+}
+
+export type AdminDashboardTab =
+  | 'all'
+  | 'pending-review'
+  | 'in-review'
+  | 'returned'
+  | 'priced'
+  | 'awaiting-approval'
+  | 'approved'
+  | 'confirmed'
+  | 'rejected';
+
+export interface AdminDashboardSections {
+  all: AgencyReviewRow[];
+  pendingReview: AgencyReviewRow[];
+  inReview: AgencyReviewRow[];
+  returned: AgencyReviewRow[];
+  priced: AgencyReviewRow[];
+  awaitingApproval: AgencyReviewRow[];
+  approved: AgencyReviewRow[];
+  confirmed: AgencyReviewRow[];
+  rejected: AgencyReviewRow[];
+}
+
+export interface AdminDashboardResponse {
+  totalItineraries: number;
+  pendingReviewCount: number;
+  awaitingApprovalCount: number;
+  confirmedCount: number;
+  statusCounts: Record<string, number>;
+  sections: AdminDashboardSections;
 }
 
 export interface ItineraryMessage {
   id: number;
   itineraryId: number;
   senderId: number;
+  senderName?: string;
   senderRole: 'TRAVELER' | 'STAFF' | 'ADMIN' | string;
   message: string;
-  type: 'REQUEST_CHANGE' | 'COMMENT' | string;
+  type: 'REQUEST_CHANGE' | 'COMMENT' | 'INTERNAL_NOTE' | string;
   createdAt: string;
 }
 
+export interface ItineraryConversation {
+  messages: ItineraryMessage[];
+  assignedReviewerId?: number | null;
+  canViewConversation: boolean;
+  canSendMessage: boolean;
+}
+
+export interface AssignReviewerResult {
+  itineraryId: number;
+  status: string;
+  assignedReviewerId?: number | null;
+  isCurrentUserReviewer: boolean;
+  reviewerAssignedByThisRequest: boolean;
+}

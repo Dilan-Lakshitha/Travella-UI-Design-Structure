@@ -1,22 +1,105 @@
-<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
-  <app-card class="w-full max-w-md">
-    <app-card-header class="space-y-1 text-center">
-      <div class="flex justify-center mb-4">
-        <div class="rounded-full bg-blue-500 p-3">
-          <app-icon name="plane" [size]="32" class="text-white" />
+<div class="min-h-screen grid lg:grid-cols-2 bg-gradient-to-br from-sky-100 via-white to-purple-100 overflow-hidden">
+
+  <!-- LEFT SIDE -->
+  <div class="hidden lg:flex flex-col justify-center px-16 relative">
+    
+    <!-- Background Blur Circles -->
+    <div class="absolute top-10 left-10 w-72 h-72 bg-blue-300/30 rounded-full blur-3xl"></div>
+    <div class="absolute bottom-10 right-10 w-72 h-72 bg-purple-300/30 rounded-full blur-3xl"></div>
+
+    <div class="relative z-10">
+      <div class="flex items-center gap-4 mb-8">
+        <div class="bg-blue-500 p-4 rounded-2xl shadow-xl">
+          <app-icon name="plane" [size]="40" class="text-white"></app-icon>
+        </div>
+
+        <div>
+          <h1 class="text-5xl font-bold text-gray-800">Travella</h1>
+          <p class="text-gray-500 text-lg">
+            Smart Travel Management Platform
+          </p>
         </div>
       </div>
-      <app-card-title class="text-3xl">Travella</app-card-title>
-      <app-card-description>Travel Management System</app-card-description>
-    </app-card-header>
 
-    <app-card-content>
-      <form (ngSubmit)="handleLogin()" class="space-y-4">
-        <div class="space-y-2">
+      <div class="space-y-6 mt-10">
+        
+        <div class="flex items-start gap-4">
+          <div class="bg-white shadow-md rounded-xl p-3">
+            ✈️
+          </div>
+          <div>
+            <h3 class="font-semibold text-lg text-gray-800">
+              Manage Trips Easily
+            </h3>
+            <p class="text-gray-500">
+              Organize itineraries, approvals, and bookings in one place.
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-4">
+          <div class="bg-white shadow-md rounded-xl p-3">
+            🏨
+          </div>
+          <div>
+            <h3 class="font-semibold text-lg text-gray-800">
+              Accommodation & Meals
+            </h3>
+            <p class="text-gray-500">
+              Add hotels, meal plans, and transportation seamlessly.
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-4">
+          <div class="bg-white shadow-md rounded-xl p-3">
+            📩
+          </div>
+          <div>
+            <h3 class="font-semibold text-lg text-gray-800">
+              Instant Notifications
+            </h3>
+            <p class="text-gray-500">
+              Travelers and staff receive approval and update emails instantly.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT SIDE LOGIN CARD -->
+  <div class="flex items-center justify-center p-6">
+
+    <div
+      class="w-full max-w-md backdrop-blur-xl bg-white/70 border border-white/40 shadow-2xl rounded-3xl p-8"
+    >
+
+      <div class="text-center mb-8">
+        <div class="flex justify-center mb-5">
+          <div class="rounded-2xl bg-gradient-to-r from-blue-500 to-purple-500 p-4 shadow-lg">
+            <app-icon name="plane" [size]="34" class="text-white"></app-icon>
+          </div>
+        </div>
+
+        <h2 class="text-4xl font-bold text-gray-800">
+          Welcome Back
+        </h2>
+
+        <p class="text-gray-500 mt-2">
+          Sign in to continue your journey
+        </p>
+      </div>
+
+      <form (ngSubmit)="handleLogin()" class="space-y-5">
+
+        <div>
           <app-label for="role">Role</app-label>
+
           <select
             id="role"
-            class="input mt-1"
+            class="input mt-2 h-12 rounded-xl border-gray-200 focus:ring-2 focus:ring-blue-400"
             [(ngModel)]="role"
             name="role"
           >
@@ -25,32 +108,84 @@
             <option value="ADMIN">Admin</option>
           </select>
         </div>
-        <div class="space-y-2">
+
+        <div>
           <app-label for="traveler-email">Email</app-label>
-          <app-input id="traveler-email" type="email" placeholder="traveler@example.com" [(ngModel)]="email" name="email"
-            [required]="true" />
+
+          <app-input
+            id="traveler-email"
+            type="email"
+            placeholder="traveler@example.com"
+            [(ngModel)]="email"
+            name="email"
+            [required]="true"
+            class="mt-2"
+          />
         </div>
-        <div class="space-y-2">
+
+        <div>
           <app-label for="traveler-password">Password</app-label>
-          <app-input id="traveler-password" type="password" placeholder="••••••••" [(ngModel)]="password"
-            name="password" [required]="true" />
+
+          <app-input
+            id="traveler-password"
+            type="password"
+            placeholder="••••••••"
+            [(ngModel)]="password"
+            name="password"
+            [required]="true"
+            class="mt-2"
+          />
         </div>
-        <p *ngIf="errorMessage" class="text-sm text-red-600">
+
+        <p *ngIf="errorMessage" class="text-sm text-red-500">
           {{ errorMessage }}
         </p>
-        <button type="submit" class="btn btn-primary w-full">
-          Sign In
-        </button>
-      </form>
-    </app-card-content>
 
-    <app-card-footer class="flex flex-col space-y-3">
-      <div class="text-sm text-muted-foreground text-center">
-        Don't have an account?
+        <button
+  type="submit"
+  class="w-full h-12 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold shadow-lg hover:scale-[1.02] transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
+  [disabled]="isLoading"
+>
+  <svg
+    *ngIf="isLoading"
+    class="h-5 w-5 animate-spin"
+    viewBox="0 0 24 24"
+    fill="none"
+    aria-hidden="true"
+  >
+    <circle
+      class="opacity-25"
+      cx="12"
+      cy="12"
+      r="10"
+      stroke="currentColor"
+      stroke-width="4"
+    ></circle>
+    <path
+      class="opacity-75"
+      fill="currentColor"
+      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+    ></path>
+  </svg>
+
+  <span>{{ isLoading ? "Signing In..." : "Sign In" }}</span>
+</button>
+
+      </form>
+
+      <div class="mt-8 text-center">
+        <p class="text-sm text-gray-500 mb-4">
+          Don’t have an account?
+        </p>
+
+        <button
+          class="w-full h-12 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition-all duration-300"
+          (click)="goToRegister()"
+        >
+          Create Account
+        </button>
       </div>
-      <button class="btn btn-outline w-full" (click)="goToRegister()">
-        Sign Up
-      </button>
-    </app-card-footer>
-  </app-card>
+
+    </div>
+  </div>
 </div>

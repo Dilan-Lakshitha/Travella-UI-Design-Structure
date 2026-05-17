@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService, UserRole } from '../../services/auth.service';
 import { IconComponent } from '../ui/icons.component';
+import { NotificationBellComponent } from '../notification-bell/notification-bell.component';
 
 interface NavItem {
   icon: string;
@@ -13,7 +14,7 @@ interface NavItem {
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [CommonModule, IconComponent],
+  imports: [CommonModule, IconComponent, NotificationBellComponent],
   templateUrl: './layout.component.html',
   styleUrls: ["./layout.component.scss"],
 })

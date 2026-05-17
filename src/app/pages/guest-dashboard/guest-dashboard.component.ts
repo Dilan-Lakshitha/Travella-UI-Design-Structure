@@ -1,15 +1,29 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { LayoutComponent } from '../../components/layout/layout.component';
 import { CardComponent, CardHeaderComponent, CardTitleComponent, CardDescriptionComponent, CardContentComponent } from '../../components/ui/card.component';
 import { BadgeComponent } from '../../components/ui/badge.component';
 import { IconComponent } from '../../components/ui/icons.component';
 import { ItineraryService } from '../../services/itinerary.service';
 import { ToastService } from '../../services/toast.service';
-import type { GuestItineraryRow, ItineraryMessage } from '../../models/itinerary.models';
+import { AuthService } from '../../services/auth.service';
+import type { GuestItineraryRow, TravelerDashboardTab } from '../../models/itinerary.models';
 import { ItineraryCardComponent } from '../../components/itinerary-card/itinerary-card.component';
 import { ConversationModalComponent } from '../../components/conversation-modal/conversation-modal.component';
+import {
+  canTravelerEditReturned,
+  canTravelerOpenConversation,
+  isFinalReadOnly,
+  itineraryStatusClass,
+  itineraryStatusLabel,
+  travelerTabForStatus,
+} from '../../utils/itinerary-status.util';
+
+interface TravelerTabConfig {
+  id: TravelerDashboardTab;
+  label: string;
+}
 
 @Component({
   selector: 'app-guest-dashboard',
@@ -18,37 +32,63 @@ import { ConversationModalComponent } from '../../components/conversation-modal/
     CommonModule,
     LayoutComponent,
     CardComponent,
-    CardHeaderComponent,
-    CardTitleComponent,
-    CardDescriptionComponent,
     CardContentComponent,
-    BadgeComponent,
     IconComponent,
     ItineraryCardComponent,
-    ConversationModalComponent
+    ConversationModalComponent,
   ],
   templateUrl: './guest-dashboard.component.html',
-  styleUrls: ['./guest-dashboard.component.scss']
+  styleUrls: ['./guest-dashboard.component.scss'],
 })
-export class GuestDashboardComponent {
+export class GuestDashboardComponent implements OnInit {
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private itineraryService = inject(ItineraryService);
   private toastService = inject(ToastService);
+  private authService = inject(AuthService);
 
+  readonly tabs: TravelerTabConfig[] = [
+    { id: 'draft', label: 'Draft' },
+    { id: 'submitted', label: 'Submitted' },
+    { id: 'returned', label: 'Returned / Resubmitted' },
+    { id: 'approved', label: 'Approved / Confirmed' },
+    { id: 'rejected', label: 'Rejected' },
+  ];
+
+  activeTab: TravelerDashboardTab = 'draft';
   itineraries: GuestItineraryRow[] = [];
   isLoading = false;
   errorMessage = '';
   busyItineraryIds = new Set<number>();
+
   conversationOpen = false;
   conversationItineraryId: number | null = null;
-  messages: ItineraryMessage[] = [];
 
-  async ngOnInit() {
+  readonly statusLabel = itineraryStatusLabel;
+  readonly statusClass = itineraryStatusClass;
+
+  async ngOnInit(): Promise<void> {
     await this.refresh();
+    await this.openConversationFromQuery();
   }
 
-  private normalizeStatus(status: string): string {
-    return String(status ?? '').toLowerCase();
+  private async openConversationFromQuery(): Promise<void> {
+    const id = Number(this.route.snapshot.queryParamMap.get('openConversation'));
+    if (!Number.isFinite(id) || id <= 0) {
+      return;
+    }
+
+    this.openConversation(id);
+    await this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { openConversation: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  normalizeStatus(row: GuestItineraryRow): string {
+    return String(row.rawStatus ?? row.status ?? '').toLowerCase().trim();
   }
 
   async refresh(): Promise<void> {
@@ -64,55 +104,34 @@ export class GuestDashboardComponent {
     }
   }
 
-  get draftItineraries(): GuestItineraryRow[] {
-    return this.itineraries.filter(i => this.normalizeStatus(i.status) === 'draft');
+  selectTab(tab: TravelerDashboardTab): void {
+    this.activeTab = tab;
   }
 
-  get submittedItineraries(): GuestItineraryRow[] {
-    return this.itineraries.filter(i => this.normalizeStatus(i.status) === 'submitted');
+  itemsForActiveTab(): GuestItineraryRow[] {
+    return this.itineraries.filter((i) => travelerTabForStatus(this.normalizeStatus(i)) === this.activeTab);
   }
 
-  get correctedItineraries(): GuestItineraryRow[] {
-    return this.itineraries.filter(i => ['returned', 'returned_for_correction', 'corrected', 'resubmitted'].includes(this.normalizeStatus(i.status)));
+  get returnedCount(): number {
+    return this.itineraries.filter((i) => travelerTabForStatus(this.normalizeStatus(i)) === 'returned').length;
   }
 
-  get approvedItineraries(): GuestItineraryRow[] {
-    const approvedStatuses = new Set(['approved_by_admin', 'approved', 'approved_by_staff', 'priced', 'sent_to_admin', 'confirmed']);
-    return this.itineraries.filter(i => approvedStatuses.has(this.normalizeStatus(i.status)));
+  get submittedCount(): number {
+    return this.itineraries.filter((i) => travelerTabForStatus(this.normalizeStatus(i)) === 'submitted').length;
   }
 
-  getStatusColor(status: string): string {
-    const normalized = this.normalizeStatus(status);
-    const colors: Record<string, string> = {
-      draft: 'bg-gray-100 text-gray-800',
-      submitted: 'bg-blue-100 text-blue-800',
-      approved: 'bg-green-100 text-green-800',
-      confirmed: 'bg-purple-100 text-purple-800',
-      corrected: 'bg-red-100 text-red-800',
-      returned: 'bg-red-100 text-red-800',
-      returned_for_correction: 'bg-red-100 text-red-800',
-      resubmitted: 'bg-orange-100 text-orange-800',
-      rejected: 'bg-red-100 text-red-800'
-    };
-    if (normalized === 'approved_by_staff' || normalized === 'approved_by_admin') return colors['approved'];
-    if (normalized === 'requested_changes') return colors['corrected'];
-    if (normalized === 'priced') return 'bg-orange-100 text-orange-800';
-    if (normalized === 'sent_to_admin') return 'bg-indigo-100 text-indigo-800';
-    if (normalized === 'under_review') return 'bg-yellow-100 text-yellow-800';
-    return colors[normalized] || 'bg-gray-100 text-gray-800';
+  get approvedCount(): number {
+    return this.itineraries.filter((i) => travelerTabForStatus(this.normalizeStatus(i)) === 'approved').length;
   }
 
-  formatDate(dateStr: string): string {
+  formatDate(dateStr: string | null | undefined): string {
+    if (!dateStr) return '—';
     return new Date(dateStr).toLocaleDateString();
   }
 
-  formatStatus(status: string): string {
-    const s = this.normalizeStatus(status).replace(/_/g, ' ');
-    return s.length ? s.replace(/\b\w/g, c => c.toUpperCase()) : status;
-  }
-
   navigateToBuilder(): void {
-    this.router.navigate(['/guest/itinerary-builder']);
+    const base = this.router.url.includes('/traveler/') ? '/traveler' : '/guest';
+    this.router.navigate([`${base}/itinerary-builder`]);
   }
 
   navigateToEditItinerary(id: number): void {
@@ -121,21 +140,53 @@ export class GuestDashboardComponent {
   }
 
   navigateToBooking(id: number): void {
-    this.router.navigate(['/guest/booking', id]);
+    const base = this.router.url.includes('/traveler/') ? '/traveler' : '/guest';
+    this.router.navigate([`${base}/booking`, id]);
+  }
+
+  canEditReturned(row: GuestItineraryRow): boolean {
+    return canTravelerEditReturned(this.normalizeStatus(row));
+  }
+
+  canViewConversation(row: GuestItineraryRow): boolean {
+    return canTravelerOpenConversation(this.normalizeStatus(row));
+  }
+
+  isReadOnlyFinal(row: GuestItineraryRow): boolean {
+    return isFinalReadOnly(this.normalizeStatus(row));
+  }
+
+  notificationText(row: GuestItineraryRow): string | null {
+    const status = this.normalizeStatus(row);
+    if (status === 'returned_for_correction') return 'Action needed: update your itinerary and resubmit.';
+    if (status === 'resubmitted') return 'Resubmitted — waiting for staff review.';
+    if (status === 'approved_by_admin') return 'Your trip has been approved by the owner.';
+    if (status === 'confirmed') return 'Your trip is confirmed.';
+    if (status === 'rejected') return 'This itinerary was rejected.';
+    if (status === 'under_review') return 'Your itinerary is being reviewed.';
+    return null;
   }
 
   async submitItinerary(id: number, event?: Event): Promise<void> {
     event?.stopPropagation();
     if (this.busyItineraryIds.has(id)) return;
 
+    const row = this.itineraries.find((i) => i.id === id);
+    const isReturned = row && this.normalizeStatus(row) === 'returned_for_correction';
+
     this.busyItineraryIds.add(id);
     try {
-      await this.itineraryService.submitItinerary(id);
-      this.toastService.success('Itinerary submitted for review.');
+      if (isReturned) {
+        await this.itineraryService.resubmitItinerary(id);
+        this.toastService.success('Itinerary resubmitted for review.');
+      } else {
+        await this.itineraryService.submitItinerary(id);
+        this.toastService.success('Itinerary submitted for review.');
+      }
       await this.refresh();
     } catch (e) {
       console.error(e);
-      this.toastService.error('Failed to submit itinerary.');
+      this.toastService.error(this.itineraryService.readApiError(e));
     } finally {
       this.busyItineraryIds.delete(id);
     }
@@ -157,15 +208,12 @@ export class GuestDashboardComponent {
     }
   }
 
-  async openConversation(itineraryId: number): Promise<void> {
+  openConversation(itineraryId: number): void {
     this.conversationItineraryId = itineraryId;
     this.conversationOpen = true;
-    this.messages = await this.itineraryService.getMessages(itineraryId);
   }
 
-  async sendConversationMessage(text: string): Promise<void> {
-    if (!this.conversationItineraryId) return;
-    await this.itineraryService.addMessage(this.conversationItineraryId, text, 'COMMENT');
-    this.messages = await this.itineraryService.getMessages(this.conversationItineraryId);
+  currentUserId(): number | null {
+    return this.authService.getUser()?.userId ?? null;
   }
 }

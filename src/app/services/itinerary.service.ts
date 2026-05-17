@@ -4,13 +4,18 @@ import { firstValueFrom } from 'rxjs';
 import { API_BASE_URL } from '../config/api.config';
 import type {
   AgencyReviewRow,
+  AdminDashboardResponse,
+  StaffItineraryTab,
   CompanyItineraryRow,
   GuestItineraryRow,
   ItineraryDto,
   ItineraryDraftPayload,
   ItineraryFullApiResponse,
   ItineraryPricingPayload,
+  ItineraryPricingDetail,
   ItineraryMessage,
+  ItineraryConversation,
+  AssignReviewerResult,
 } from '../models/itinerary.models';
 
 @Injectable({
@@ -22,6 +27,7 @@ export class ItineraryService {
   private guestBaseUrl = `${API_BASE_URL}/api/guest`;
   private agencyBaseUrl = `${API_BASE_URL}/api/agency`;
   private companyBaseUrl = `${API_BASE_URL}/api/company`;
+  private adminBaseUrl = `${API_BASE_URL}/api/admin`;
   private ownerBaseUrl = `${API_BASE_URL}/api/owner`;
 
   constructor(private http: HttpClient) {}
@@ -82,7 +88,8 @@ export class ItineraryService {
       days,
       guestName: full.itinerary.guestName,
       rawStatus: full.itinerary.status,
-      totalAmount: full.itinerary.totalPrice,
+      totalAmount: full.pricing?.totalAmount ?? full.itinerary.totalPrice,
+      pricing: full.pricing ?? null,
     };
   }
 
@@ -115,12 +122,30 @@ export class ItineraryService {
     return firstValueFrom(this.http.get<AgencyReviewRow[]>(`${this.agencyBaseUrl}/review-itineraries`));
   }
 
-  async startReview(itineraryId: number): Promise<void> {
-    await firstValueFrom(this.http.post(`${this.baseUrl}/${itineraryId}/start-review`, {}));
+  async getStaffItinerariesByTab(tab: StaffItineraryTab): Promise<AgencyReviewRow[]> {
+    return firstValueFrom(
+      this.http.get<AgencyReviewRow[]>(`${this.baseUrl}/staff`, { params: { tab } }),
+    );
+  }
+
+  async assignReviewer(itineraryId: number): Promise<AssignReviewerResult> {
+    return firstValueFrom(
+      this.http.post<AssignReviewerResult>(`${this.baseUrl}/${itineraryId}/assign-reviewer`, {}),
+    );
+  }
+
+  async startReview(itineraryId: number): Promise<AssignReviewerResult> {
+    return firstValueFrom(
+      this.http.post<AssignReviewerResult>(`${this.baseUrl}/${itineraryId}/start-review`, {}),
+    );
   }
 
   async getCompanyItineraries(): Promise<CompanyItineraryRow[]> {
     return firstValueFrom(this.http.get<CompanyItineraryRow[]>(`${this.companyBaseUrl}/itineraries`));
+  }
+
+  async getAdminDashboard(): Promise<AdminDashboardResponse> {
+    return firstValueFrom(this.http.get<AdminDashboardResponse>(`${this.adminBaseUrl}/dashboard`));
   }
 
   async getOwnerSubmittedItineraries(): Promise<CompanyItineraryRow[]> {
@@ -140,6 +165,10 @@ export class ItineraryService {
     await firstValueFrom(this.http.post(`${this.baseUrl}/${itineraryId}/submit`, {}));
   }
 
+  async resubmitItinerary(itineraryId: number): Promise<void> {
+    await firstValueFrom(this.http.post(`${this.baseUrl}/${itineraryId}/resubmit`, {}));
+  }
+
   readApiError(err: unknown): string {
     if (err instanceof HttpErrorResponse) {
       const body = err.error as any;
@@ -156,7 +185,7 @@ export class ItineraryService {
   }
 
   async rejectItinerary(itineraryId: number): Promise<any> {
-    return firstValueFrom(this.http.post(`${this.baseUrl}/reject`, { itineraryId }));
+    return firstValueFrom(this.http.post(`${this.baseUrl}/${itineraryId}/reject`, {}));
   }
 
   async confirmItinerary(itineraryId: number): Promise<any> {
@@ -167,8 +196,21 @@ export class ItineraryService {
     return firstValueFrom(this.http.post(`${this.baseUrl}/review`, payload));
   }
 
-  async createPricing(payload: ItineraryPricingPayload): Promise<any> {
-    return firstValueFrom(this.http.post(`${this.baseUrl}/pricing`, payload));
+  async createPricing(payload: ItineraryPricingPayload): Promise<ItineraryPricingDetail> {
+    return firstValueFrom(this.http.post<ItineraryPricingDetail>(`${this.baseUrl}/pricing`, payload));
+  }
+
+  async getItineraryPricing(itineraryId: number): Promise<ItineraryPricingDetail | null> {
+    try {
+      return await firstValueFrom(
+        this.http.get<ItineraryPricingDetail>(`${this.baseUrl}/${itineraryId}/pricing`),
+      );
+    } catch (e) {
+      if (e instanceof HttpErrorResponse && e.status === 404) {
+        return null;
+      }
+      throw e;
+    }
   }
 
   async assignDriverGuide(itineraryId: number, driverId: number, guideId: number): Promise<any> {
@@ -187,20 +229,39 @@ export class ItineraryService {
     return firstValueFrom(this.http.post(`${this.baseUrl}/admin-reject`, { itineraryId }));
   }
 
-  async getMessages(itineraryId: number): Promise<ItineraryMessage[]> {
-    return firstValueFrom(this.http.get<ItineraryMessage[]>(`${this.baseUrl}/${itineraryId}/messages`));
+  async getConversation(itineraryId: number): Promise<ItineraryConversation> {
+    return firstValueFrom(this.http.get<ItineraryConversation>(`${this.baseUrl}/${itineraryId}/messages`));
   }
 
-  async addMessage(itineraryId: number, message: string, type: 'REQUEST_CHANGE' | 'COMMENT' = 'COMMENT'): Promise<any> {
-    return firstValueFrom(this.http.post(`${this.baseUrl}/${itineraryId}/messages`, { message, type }));
+  async getMessages(itineraryId: number): Promise<ItineraryMessage[]> {
+    const conversation = await this.getConversation(itineraryId);
+    return conversation.messages ?? [];
+  }
+
+  async addMessage(
+    itineraryId: number,
+    message: string,
+    type: 'REQUEST_CHANGE' | 'COMMENT' | 'INTERNAL_NOTE' = 'COMMENT',
+  ): Promise<ItineraryMessage> {
+    return firstValueFrom(
+      this.http.post<ItineraryMessage>(`${this.baseUrl}/${itineraryId}/messages`, { message, type }),
+    );
   }
 
   async requestCorrection(itineraryId: number, message: string): Promise<any> {
-    return firstValueFrom(this.http.post(`${this.baseUrl}/${itineraryId}/request-correction`, { message, type: 'REQUEST_CHANGE' }));
+    return this.returnItineraryForCorrection(itineraryId, message);
   }
 
-  async updatePricingMargin(itineraryId: number, profitMargin: number): Promise<any> {
-    return firstValueFrom(this.http.put(`${API_BASE_URL}/api/pricing/update-margin`, { itineraryId, profitMargin }));
+  async returnItineraryForCorrection(itineraryId: number, message: string): Promise<any> {
+    return firstValueFrom(
+      this.http.post(`${this.baseUrl}/${itineraryId}/return`, { message, type: 'REQUEST_CHANGE' }),
+    );
+  }
+
+  async updatePricingMargin(itineraryId: number, profitMargin: number): Promise<ItineraryPricingDetail> {
+    return firstValueFrom(
+      this.http.put<ItineraryPricingDetail>(`${API_BASE_URL}/api/pricing/update-margin`, { itineraryId, profitMargin }),
+    );
   }
 
   async getAvailableStaff(startDate: string, endDate: string, role: 'DRIVER' | 'GUIDE'): Promise<any[]> {

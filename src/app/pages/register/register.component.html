@@ -1,56 +1,217 @@
-<div class="min-h-screen flex items-center justify-center bg-gray-100">
-  <div class="w-full max-w-md bg-white rounded-xl shadow-lg p-8 space-y-6 animate-fade-in">
-    <div class="flex justify-center">
-      <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white text-xl">
-        ✈️
+<div class="min-h-screen bg-gradient-to-br from-sky-50 via-white to-violet-50 relative overflow-hidden">
+
+  <div class="absolute top-0 left-0 h-80 w-80 rounded-full bg-sky-200/35 blur-3xl"></div>
+  <div class="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-violet-200/35 blur-3xl"></div>
+
+  <div class="relative z-10 flex min-h-screen items-center justify-center px-4 py-6">
+    <div class="w-full max-w-5xl grid lg:grid-cols-5 gap-6 items-center scale-[0.92]">
+
+      <div class="lg:col-span-2 space-y-6">
+
+        <div class="inline-flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-2 shadow-sm">
+          <span class="text-lg">✈️</span>
+          <span class="text-sm tracking-wide text-slate-600">
+            Travella Registration
+          </span>
+        </div>
+
+        <div class="space-y-3">
+          <h1 class="text-4xl xl:text-5xl font-bold leading-tight text-slate-800">
+            Begin your next
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-violet-500">
+              adventure
+            </span>
+          </h1>
+
+          <p class="text-base text-slate-500 max-w-md leading-relaxed">
+            Create your Travella account and manage travel itineraries,
+            accommodations, approvals, and smart trip planning in one place.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 max-w-xl">
+
+          <div class="rounded-2xl bg-white p-4 shadow-md border border-slate-100 hover:-translate-y-1 transition">
+            <div class="text-2xl mb-2">🧳</div>
+            <h3 class="font-semibold text-slate-800 text-sm">
+              Trip Planning
+            </h3>
+            <p class="text-xs text-slate-500 mt-1">
+              Manage all journeys easily.
+            </p>
+          </div>
+
+          <div class="rounded-2xl bg-white p-4 shadow-md border border-slate-100 hover:-translate-y-1 transition">
+            <div class="text-2xl mb-2">🏨</div>
+            <h3 class="font-semibold text-slate-800 text-sm">
+              Accommodation
+            </h3>
+            <p class="text-xs text-slate-500 mt-1">
+              Hotels & meals organized.
+            </p>
+          </div>
+
+          <div class="rounded-2xl bg-white p-4 shadow-md border border-slate-100 hover:-translate-y-1 transition">
+            <div class="text-2xl mb-2">📩</div>
+            <h3 class="font-semibold text-slate-800 text-sm">
+              Notifications
+            </h3>
+            <p class="text-xs text-slate-500 mt-1">
+              Instant email updates.
+            </p>
+          </div>
+
+          <div class="rounded-2xl bg-white p-4 shadow-md border border-slate-100 hover:-translate-y-1 transition">
+            <div class="text-2xl mb-2">🗺️</div>
+            <h3 class="font-semibold text-slate-800 text-sm">
+              Smart Itinerary
+            </h3>
+            <p class="text-xs text-slate-500 mt-1">
+              Build trips efficiently.
+            </p>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="lg:col-span-3">
+        <div class="relative mx-auto max-w-xl rounded-[1.75rem] bg-white/95 border border-white shadow-xl backdrop-blur-xl overflow-hidden">
+
+          <div class="bg-gradient-to-r from-sky-500 to-violet-500 px-6 py-5 text-white">
+            <div class="flex items-center justify-between gap-4">
+              <div>
+                <p class="uppercase tracking-[0.25em] text-[11px] text-white/80">
+                  Create Account
+                </p>
+                <h2 class="text-2xl font-bold mt-1">
+                  Join Travella
+                </h2>
+              </div>
+
+              <div class="bg-white/20 backdrop-blur rounded-2xl px-3 py-2 text-right">
+                <p class="text-[11px] text-white/75">
+                  Travel Status
+                </p>
+                <p class="text-sm font-semibold">
+                  Ready ✈️
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="relative">
+            <div class="absolute top-1/2 left-0 w-full border-t border-dashed border-slate-200"></div>
+            <div class="relative flex justify-between px-5 -mt-3">
+              <div class="w-5 h-5 rounded-full bg-sky-50 border border-slate-200"></div>
+              <div class="w-5 h-5 rounded-full bg-sky-50 border border-slate-200"></div>
+            </div>
+          </div>
+
+
+          <div class="p-6">
+            <form class="grid gap-4 md:grid-cols-2" (ngSubmit)="register()">
+
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-slate-700 mb-2">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter your name"
+                  [(ngModel)]="name"
+                  name="name"
+                  required
+                  class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                />
+              </div>
+
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-slate-700 mb-2">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  [(ngModel)]="email"
+                  name="email"
+                  required
+                  class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  placeholder="Create password"
+                  [(ngModel)]="password"
+                  name="password"
+                  required
+                  class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  placeholder="Confirm password"
+                  [(ngModel)]="confirmPassword"
+                  name="confirmPassword"
+                  required
+                  class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                />
+              </div>
+
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-slate-700 mb-2">
+                  Phone Number
+                </label>
+                <input
+                  type="text"
+                  placeholder="+94 77 123 4567"
+                  [(ngModel)]="phone"
+                  name="phone"
+                  class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                />
+              </div>
+
+              <div class="md:col-span-2">
+                <p
+                  *ngIf="errorMessage"
+                  class="mb-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-500"
+                >
+                  {{ errorMessage }}
+                </p>
+
+                <button
+                  type="submit"
+                  class="w-full rounded-2xl bg-gradient-to-r from-sky-500 to-violet-500 py-3 text-white font-semibold shadow-lg transition hover:scale-[1.01] hover:shadow-xl"
+                >
+                  Create Account
+                </button>
+              </div>
+
+            </form>
+
+            <div class="mt-5 text-center">
+              <p class="text-slate-500 text-sm">
+
+              </p>
+              <a
+                routerLink="/login"
+                class="inline-flex mt-3 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-2.5 font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+              >
+                Sign In
+              </a>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-
-    <div class="text-center">
-      <h2 class="text-xl font-semibold">Travella Registration</h2>
-      <p class="text-sm text-gray-500">Travel Management System</p>
-    </div>
-
-    <form class="space-y-4" (ngSubmit)="register()">
-      <div>
-        <label class="text-sm font-medium">Name</label>
-        <input type="text" class="input mt-1" placeholder="Enter your name" [(ngModel)]="name" name="name" required>
-      </div>
-
-      <div>
-        <label class="text-sm font-medium">Email Address</label>
-        <input type="email" class="input mt-1" placeholder="Enter your email" [(ngModel)]="email" name="email" required>
-      </div>
-
-      <div>
-        <label class="text-sm font-medium">Password</label>
-        <input type="password" class="input mt-1" placeholder="Enter password" [(ngModel)]="password" name="password" required>
-      </div>
-
-      <div>
-        <label class="text-sm font-medium">Confirm Password</label>
-        <input type="password" class="input mt-1" placeholder="Confirm password" [(ngModel)]="confirmPassword" name="confirmPassword" required>
-      </div>
-
-      <div>
-        <label class="text-sm font-medium">Phone Number</label>
-        <input type="text" class="input mt-1" placeholder="Enter phone number (optional)" [(ngModel)]="phone" name="phone">
-      </div>
-
-      <p *ngIf="errorMessage" class="text-sm text-red-600">
-        {{ errorMessage }}
-      </p>
-
-      <button type="submit" class="w-full bg-black text-white py-2 rounded-full hover:opacity-90 transition">
-        Sign Up
-      </button>
-    </form>
-
-    <p class="text-center text-sm text-gray-500">
-      Already have an account?
-      <a routerLink="/login" class="text-blue-500 hover:underline">Sign In</a>
-    </p>
-
   </div>
-
 </div>

@@ -9,6 +9,7 @@ import { SelectComponent, SelectOption } from '../../components/ui/select.compon
 import { IconComponent } from '../../components/ui/icons.component';
 import { ToastService } from '../../services/toast.service';
 import { AdminService } from '../../services/admin.service';
+import { AdminBookingCalendarComponent } from '../../components/admin-booking-calendar/admin-booking-calendar.component';
 import type { GuideDto } from '../../models/staff.models';
 
 @Component({
@@ -32,7 +33,8 @@ import type { GuideDto } from '../../models/staff.models';
     InputComponent,
     LabelComponent,
     SelectComponent,
-    IconComponent
+    IconComponent,
+    AdminBookingCalendarComponent,
   ],
   templateUrl: './admin-guides.component.html',
   styleUrls: ['./admin-guides.component.scss']
@@ -48,8 +50,11 @@ export class AdminGuidesComponent implements OnInit {
 
   name = '';
   phone = '';
+  language = '';
+  email = '';
   experience:number = 0;
   availability = 'AVAILABLE';
+  languageError = '';
 
   availabilityOptions: SelectOption[] = [
     { value: 'AVAILABLE', label: 'AVAILABLE' },
@@ -75,8 +80,14 @@ export class AdminGuidesComponent implements OnInit {
   }
 
   async create(): Promise<void> {
+    this.languageError = '';
     if (!this.name.trim() || !this.phone.trim()) {
       this.toastService.error('Name and phone are required.');
+      return;
+    }
+    if (!this.language.trim()) {
+      this.languageError = 'Language is required for guides.';
+      this.toastService.error(this.languageError);
       return;
     }
     this.isCreating = true;
@@ -84,12 +95,16 @@ export class AdminGuidesComponent implements OnInit {
       await this.adminService.createGuide({
         name: this.name.trim(),
         phone: this.phone.trim(),
+        language: this.language.trim(),
+        email: this.email.trim() || undefined,
         experience: this.experience,
         availability: this.availability
       });
-      this.toastService.success('Guide created.');
+      this.toastService.success('Guide created. Notification emails sent if configured.');
       this.name = '';
       this.phone = '';
+      this.language = '';
+      this.email = '';
       this.experience = 0;
       this.availability = 'AVAILABLE';
       await this.refresh();
@@ -99,6 +114,21 @@ export class AdminGuidesComponent implements OnInit {
     } finally {
       this.isCreating = false;
     }
+  }
+
+  scrollToCalendar(): void {
+    document.getElementById('guide-booking-calendar')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  availabilityBadgeClass(status?: string | null): string {
+    const value = (status ?? 'AVAILABLE').toUpperCase();
+    if (value === 'ON_TRIP' || value === 'OFF_DUTY' || value === 'UNAVAILABLE') {
+      return 'resource-status--unavailable';
+    }
+    if (value === 'BOOKED') {
+      return 'resource-status--booked';
+    }
+    return 'resource-status--available';
   }
 }
 

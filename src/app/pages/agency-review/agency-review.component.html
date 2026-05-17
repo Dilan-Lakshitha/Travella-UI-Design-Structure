@@ -1,74 +1,184 @@
-    <app-layout title="Pending Itinerary Reviews" role="STAFF">
+    <app-layout title="Itinerary Reviews" role="STAFF">
       <div class="space-y-6">
-        @if (isLoading) {
+        <div class="flex flex-wrap gap-2 border-b border-gray-200 pb-2">
+          @for (tab of tabs; track tab.id) {
+            <button
+              type="button"
+              class="px-3 py-2 text-sm rounded-md transition-colors"
+              [class.bg-blue-600]="activeTab === tab.id"
+              [class.text-white]="activeTab === tab.id"
+              [class.text-gray-700]="activeTab !== tab.id"
+              [class.hover:bg-gray-100]="activeTab !== tab.id"
+              (click)="selectTab(tab.id)"
+            >
+              {{ tab.label }}
+            </button>
+          }
+        </div>
+
+        @if (tabLoading) {
           <app-card>
             <app-card-content class="pt-6 text-center text-gray-500">
-              Loading review queue...
+              Loading itineraries...
             </app-card-content>
           </app-card>
         }
-        @if (!isLoading && errorMessage) {
+
+        @if (!tabLoading && tabError) {
           <app-card>
             <app-card-content class="pt-6 text-center text-red-600">
-              {{ errorMessage }}
+              {{ tabError }}
+              <div class="mt-3">
+                <button type="button" class="btn btn-outline btn-sm" (click)="loadTab(activeTab)">Retry</button>
+              </div>
             </app-card-content>
           </app-card>
         }
-        <div class="grid gap-4">
-          @for (review of pendingReviews; track review.id) {
-            <app-card class="hover:shadow-lg transition-shadow">
-              <app-card-header>
-                <div class="flex justify-between items-start">
-                  <div>
-                    <app-card-title class="text-xl">{{ review.tripName }}</app-card-title>
-                    <app-card-description class="flex items-center mt-1">
-                      <app-icon name="users" [size]="12" class="mr-1" />
-                      Guest: {{ review.guestName }}
-                    </app-card-description>
-                  </div>
-                  <app-badge class="bg-yellow-100 text-yellow-800">Pending Review</app-badge>
-                </div>
-              </app-card-header>
-              <app-card-content>
-                <div class="space-y-3">
-                  <div class="flex items-center text-sm text-gray-600">
-                    <app-icon name="map-pin" [size]="16" class="mr-2" />
-                    {{ review.destination }}
-                  </div>
-                  <div class="flex items-center text-sm text-gray-600">
-                    <app-icon name="calendar" [size]="16" class="mr-2" />
-                    {{ formatDate(review.startDate) }} - {{ formatDate(review.endDate) }}
-                    <span class="ml-2">({{ review.daysCount }} days)</span>
-                  </div>
-                  <div class="text-sm text-gray-500">
-                    Submitted: {{ formatDate(review.submittedDate) }}
-                  </div>
 
-                  <div class="flex space-x-2 pt-3">
-                    <button
-                      class="btn btn-outline btn-sm"
-                      (click)="openReviewDialogWithDetails(review)"
-                    >
-                      <app-icon name="eye" [size]="16" class="mr-2" />
-                      Review Details
-                    </button>
-                    <button
-                      class="btn btn-primary btn-sm"
-                      (click)="handleApprove(review.id)"
-                      [disabled]="busyItineraryIds.has(review.id)"
-                    >
-                      <app-icon name="circle-check" [size]="16" class="mr-2" />
-                      @if (busyItineraryIds.has(review.id)) { Working... } @else { Quick Approve }
-                    </button>
+        @if (!tabLoading && !tabError && itineraries.length === 0) {
+          <app-card>
+            <app-card-content class="pt-6 text-center text-gray-500">
+              No itineraries in this section.
+            </app-card-content>
+          </app-card>
+        }
+
+        <div class="grid gap-4">
+          @if (!tabLoading && !tabError) {
+            @for (review of itineraries; track review.id) {
+              <app-card class="hover:shadow-lg transition-shadow">
+                <app-card-header>
+                  <div class="flex justify-between items-start gap-3">
+                    <div>
+                      <app-card-title class="text-xl">{{ review.tripName }}</app-card-title>
+                      <app-card-description class="flex items-center mt-1">
+                        <app-icon name="users" [size]="12" class="mr-1" />
+                        Guest: {{ review.guestName }}
+                      </app-card-description>
+                    </div>
+                    <app-badge [class]="getStatusClass(review)">{{ getStatusLabel(review) }}</app-badge>
                   </div>
-                </div>
-              </app-card-content>
-            </app-card>
+                </app-card-header>
+                <app-card-content>
+                  <div class="space-y-3">
+                    <div class="flex items-center text-sm text-gray-600">
+                      <app-icon name="map-pin" [size]="16" class="mr-2" />
+                      {{ review.destination }}
+                    </div>
+                    <div class="flex items-center text-sm text-gray-600">
+                      <app-icon name="calendar" [size]="16" class="mr-2" />
+                      {{ formatDate(review.startDate) }} - {{ formatDate(review.endDate) }}
+                      <span class="ml-2">({{ review.daysCount }} days)</span>
+                    </div>
+                    <div class="text-sm text-gray-500">
+                      Submitted: {{ formatDate(review.submittedDate) }}
+                    </div>
+                    @if (review.pricing?.totalAmount != null || review.totalPrice != null) {
+                      <div class="text-sm font-semibold text-green-700">
+                        Total Price: {{ (review.pricing?.totalAmount ?? review.totalPrice) | currency }}
+                      </div>
+                    }
+                    @if (review.lastMessagePreview) {
+                      <div class="text-xs text-gray-600 truncate">{{ review.lastMessagePreview }}</div>
+                    }
+
+                    <div class="flex flex-wrap gap-2 pt-3">
+                      @if (canShowReturnedTabActions(review)) {
+                        <button
+                          type="button"
+                          class="btn btn-outline btn-sm"
+                          (click)="openReviewDialogWithDetails(review)"
+                        >
+                          <app-icon name="eye" [size]="16" class="mr-2" />
+                          Review Details
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-primary btn-sm"
+                          (click)="handleApprove(review.id)"
+                          [disabled]="busyItineraryIds.has(review.id)"
+                        >
+                          @if (busyItineraryIds.has(review.id)) { Working... } @else { Continue to Pricing }
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-outline btn-sm"
+                          (click)="openReviewDialogWithDetails(review)"
+                        >
+                          <app-icon name="circle-alert" [size]="16" class="mr-2" />
+                          Return for Correction
+                        </button>
+                      } @else {
+                        @if (canShowReviewDetails(review)) {
+                          <button
+                            type="button"
+                            class="btn btn-outline btn-sm"
+                            (click)="openReviewDialogWithDetails(review)"
+                          >
+                            <app-icon name="eye" [size]="16" class="mr-2" />
+                            Review Details
+                          </button>
+                        }
+                        @if (canShowCreatePricing(review)) {
+                          <button
+                            type="button"
+                            class="btn btn-primary btn-sm"
+                            (click)="goToPricing(review.id)"
+                          >
+                            <app-icon name="circle-check" [size]="16" class="mr-2" />
+                            Create Pricing
+                          </button>
+                        }
+                        @if (canShowReturnForCorrection(review)) {
+                          <button
+                            type="button"
+                            class="btn btn-outline btn-sm"
+                            (click)="openReviewDialogWithDetails(review)"
+                          >
+                            <app-icon name="circle-alert" [size]="16" class="mr-2" />
+                            Return for Correction
+                          </button>
+                        }
+                        @if (normalizeStatus(review) === 'submitted') {
+                          <button
+                            type="button"
+                            class="btn btn-primary btn-sm"
+                            (click)="handleApprove(review.id)"
+                            [disabled]="busyItineraryIds.has(review.id)"
+                          >
+                            @if (busyItineraryIds.has(review.id)) { Working... } @else { Start Review }
+                          </button>
+                        }
+                      }
+                      @if (canShowConversation(review)) {
+                        <button
+                          type="button"
+                          class="btn btn-outline btn-sm"
+                          (click)="openConversation(review)"
+                        >
+                          <app-icon name="file-text" [size]="16" class="mr-2" />
+                          View Conversation
+                        </button>
+                      }
+                      @if (shouldShowViewDetails(review)) {
+                        <button
+                          type="button"
+                          class="btn btn-outline btn-sm"
+                          (click)="openReadOnlyDetails(review)"
+                        >
+                          <app-icon name="eye" [size]="16" class="mr-2" />
+                          View Details
+                        </button>
+                      }
+                    </div>
+                  </div>
+                </app-card-content>
+              </app-card>
+            }
           }
         </div>
       </div>
 
-      <!-- Review Dialog -->
       <app-dialog
         [open]="isDialogOpen"
         (openChange)="isDialogOpen = $event"
@@ -79,12 +189,19 @@
           <app-dialog-header>
             <app-dialog-title>{{ selectedItinerary.tripName }}</app-dialog-title>
             <app-dialog-description>
-              Review and provide feedback on this itinerary
+              @if (isReadOnly(selectedItinerary)) {
+                Read-only itinerary history
+              } @else {
+                Review and provide feedback on this itinerary
+              }
             </app-dialog-description>
           </app-dialog-header>
 
+          @if (dialogLoading) {
+            <div class="py-8 text-center text-gray-500">Loading itinerary details...</div>
+          }
+
           <div class="space-y-4 py-4">
-            <!-- Guest Info -->
             <div class="bg-gray-50 p-4 rounded-lg">
               <h4 class="font-semibold mb-2">Trip Information</h4>
               <div class="grid grid-cols-2 gap-2 text-sm">
@@ -92,15 +209,22 @@
                   <span class="text-gray-600">Guest:</span> {{ selectedItinerary.guestName }}
                 </div>
                 <div>
+                  <span class="text-gray-600">Status:</span> {{ getStatusLabel(selectedItinerary) }}
+                </div>
+                <div>
                   <span class="text-gray-600">Duration:</span> {{ selectedItinerary.daysCount }} days
                 </div>
+                @if (selectedItinerary.totalPrice != null) {
+                  <div>
+                    <span class="text-gray-600">Total:</span> {{ selectedItinerary.totalPrice | currency }}
+                  </div>
+                }
                 <div class="col-span-2">
                   <span class="text-gray-600">Route:</span> {{ selectedItinerary.destination }}
                 </div>
               </div>
             </div>
 
-            <!-- Itinerary Details -->
             <div>
               <h4 class="font-semibold mb-3">Day-by-Day Plan</h4>
               <div class="space-y-4">
@@ -128,43 +252,96 @@
               </div>
             </div>
 
-            <!-- Route Feasibility Notes -->
-            <div class="space-y-2">
-              <app-label for="reviewNotes">Route Feasibility & Expert Notes</app-label>
-              <app-textarea
-                id="reviewNotes"
-                placeholder="Add notes about route feasibility, timing, recommendations..."
-                [(ngModel)]="reviewNotes"
-                [rows]="4"
-              />
-            </div>
+            @if (!isReadOnly(selectedItinerary)) {
+              <div class="space-y-2">
+                <app-label for="reviewNotes">Route Feasibility & Expert Notes</app-label>
+                <app-textarea
+                  id="reviewNotes"
+                  placeholder="Add notes about route feasibility, timing, recommendations..."
+                  [(ngModel)]="reviewNotes"
+                  [rows]="4"
+                />
+              </div>
 
-            <!-- Correction Notes -->
-            <div class="space-y-2">
-              <app-label for="correctionNotes">Correction Notes (if returning to guest)</app-label>
-              <app-textarea
-                id="correctionNotes"
-                placeholder="Specify what needs to be corrected..."
-                [(ngModel)]="correctionNotes"
-                [rows]="3"
-              />
-            </div>
+              @if (canShowReturnForCorrection(selectedItinerary)) {
+                <div class="space-y-2">
+                  <app-label for="correctionNotes">Correction Notes (if returning to guest)</app-label>
+                  <app-textarea
+                    id="correctionNotes"
+                    placeholder="Specify what needs to be corrected..."
+                    [(ngModel)]="correctionNotes"
+                    [rows]="3"
+                  />
+                </div>
+              }
+            }
           </div>
 
-          <app-dialog-footer class="flex space-x-2">
-            <button class="btn btn-destructive" (click)="handleReject()" [disabled]="busyItineraryIds.has(selectedItinerary.id)">
-              <app-icon name="circle-x" [size]="16" class="mr-2" />
-              @if (busyItineraryIds.has(selectedItinerary.id)) { Working... } @else { Reject }
-            </button>
-            <button class="btn btn-outline" (click)="handleReturnForCorrection()" [disabled]="busyItineraryIds.has(selectedItinerary.id)">
-              <app-icon name="circle-alert" [size]="16" class="mr-2" />
-              @if (busyItineraryIds.has(selectedItinerary.id)) { Working... } @else { Return for Correction }
-            </button>
-            <button class="btn btn-primary" (click)="handleApprove(selectedItinerary.id)" [disabled]="busyItineraryIds.has(selectedItinerary.id)">
-              <app-icon name="circle-check" [size]="16" class="mr-2" />
-              @if (busyItineraryIds.has(selectedItinerary.id)) { Working... } @else { Approve & Continue to Pricing }
-            </button>
-          </app-dialog-footer>
+          @if (canShowDialogActions(selectedItinerary)) {
+            <app-dialog-footer class="flex flex-wrap gap-2">
+              <button
+                type="button"
+                class="btn btn-destructive"
+                (click)="handleReject()"
+                [disabled]="busyItineraryIds.has(selectedItinerary.id)"
+              >
+                <app-icon name="circle-x" [size]="16" class="mr-2" />
+                @if (busyItineraryIds.has(selectedItinerary.id)) { Working... } @else { Reject }
+              </button>
+              @if (canShowReturnForCorrection(selectedItinerary)) {
+                <button
+                  type="button"
+                  class="btn btn-outline"
+                  (click)="handleReturnForCorrection()"
+                  [disabled]="busyItineraryIds.has(selectedItinerary.id)"
+                >
+                  <app-icon name="circle-alert" [size]="16" class="mr-2" />
+                  @if (busyItineraryIds.has(selectedItinerary.id)) { Working... } @else { Return for Correction }
+                </button>
+              }
+              @if (canShowCreatePricing(selectedItinerary)) {
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  (click)="goToPricing(selectedItinerary.id)"
+                >
+                  <app-icon name="circle-check" [size]="16" class="mr-2" />
+                  Create Pricing
+                </button>
+              }
+              @if (normalizeStatus(selectedItinerary) === 'submitted') {
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  (click)="handleApprove(selectedItinerary.id)"
+                  [disabled]="busyItineraryIds.has(selectedItinerary.id)"
+                >
+                  @if (busyItineraryIds.has(selectedItinerary.id)) { Working... } @else { Start Review & Pricing }
+                </button>
+              }
+              @if (isResubmittedReview(selectedItinerary)) {
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  (click)="handleApprove(selectedItinerary.id)"
+                  [disabled]="busyItineraryIds.has(selectedItinerary.id)"
+                >
+                  @if (busyItineraryIds.has(selectedItinerary.id)) { Working... } @else { Continue to Pricing }
+                </button>
+              }
+            </app-dialog-footer>
+          }
         }
       </app-dialog>
+
+      <app-conversation-modal
+        [open]="conversationOpen"
+        [itineraryId]="conversationItineraryId"
+        [currentRole]="'STAFF'"
+        [currentUserId]="currentUserId()"
+        [readOnlyHint]="conversationReadOnlyHint"
+        [title]="'Itinerary Conversation'"
+        (openChange)="conversationOpen = $event"
+      />
     </app-layout>
+

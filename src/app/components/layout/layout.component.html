@@ -13,14 +13,17 @@
               </div>
             </div>
             
-            <button
-              type="button"
-              class="btn btn-ghost btn-sm"
-              (click)="logout()"
-            >
-              <app-icon name="log-out" [size]="16" class="mr-2" />
-              Logout
-            </button>
+            <div class="flex items-center gap-1">
+              <app-notification-bell [role]="role" />
+              <button
+                type="button"
+                class="btn btn-ghost btn-sm"
+                (click)="logout()"
+              >
+                <app-icon name="log-out" [size]="16" class="mr-2" />
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </header>

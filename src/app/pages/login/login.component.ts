@@ -44,22 +44,36 @@ export class LoginComponent {
   password = "";
   errorMessage = "";
   role: UserRole = 'TRAVELER';
+  isLoading = false;
 
   async handleLogin(): Promise<void> {
     this.errorMessage = "";
-    const isSuccess = await this.authService.login(this.email, this.password, this.role);
-    if (!isSuccess) {
-      this.errorMessage = "Invalid email or password.";
-      return;
-    }
+    this.isLoading = true;
 
-    if (this.authService.mustResetPassword()) {
-      this.router.navigate(['/reset-password']);
-      return;
-    }
+    try {
+      const isSuccess = await this.authService.login(
+        this.email,
+        this.password,
+        this.role
+      );
 
-    const redirectUrl = this.authService.getRedirectUrl(this.role);
-    this.router.navigate([redirectUrl]);
+      if (!isSuccess) {
+        this.errorMessage = "Invalid email or password.";
+        return;
+      }
+
+      if (this.authService.mustResetPassword()) {
+        await this.router.navigate(["/reset-password"]);
+        return;
+      }
+
+      const redirectUrl = this.authService.getRedirectUrl(this.role);
+      await this.router.navigate([redirectUrl]);
+    } catch (error) {
+      this.errorMessage = "Something went wrong. Please try again.";
+    } finally {
+      this.isLoading = false;
+    }
   }
 
   goToRegister(): void {

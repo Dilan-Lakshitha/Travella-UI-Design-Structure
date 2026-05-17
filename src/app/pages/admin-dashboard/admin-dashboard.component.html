@@ -1,0 +1,218 @@
+<app-layout title="Company Dashboard" role="ADMIN">
+  <div class="space-y-6">
+    @if (isLoading) {
+      <app-card>
+        <app-card-content class="pt-6 text-center text-gray-500">
+          Loading dashboard...
+        </app-card-content>
+      </app-card>
+    }
+
+    @if (!isLoading && errorMessage) {
+      <app-card>
+        <app-card-content class="pt-6 text-center text-red-600">
+          {{ errorMessage }}
+          <div class="mt-3">
+            <button type="button" class="btn btn-outline btn-sm" (click)="refresh()">Retry</button>
+          </div>
+        </app-card-content>
+      </app-card>
+    }
+
+    @if (!isLoading && dashboard) {
+      <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <app-card>
+          <app-card-header class="flex flex-row items-center justify-between space-y-0 pb-2">
+            <app-card-title class="text-sm font-medium">Total Itineraries</app-card-title>
+            <app-icon name="file-text" [size]="16" class="text-muted-foreground" />
+          </app-card-header>
+          <app-card-content>
+            <div class="text-2xl font-bold">{{ dashboard.totalItineraries }}</div>
+          </app-card-content>
+        </app-card>
+
+        <app-card>
+          <app-card-header class="flex flex-row items-center justify-between space-y-0 pb-2">
+            <app-card-title class="text-sm font-medium">Pending Review</app-card-title>
+            <app-icon name="clock" [size]="16" class="text-muted-foreground" />
+          </app-card-header>
+          <app-card-content>
+            <div class="text-2xl font-bold">{{ dashboard.pendingReviewCount }}</div>
+          </app-card-content>
+        </app-card>
+
+        <app-card>
+          <app-card-header class="flex flex-row items-center justify-between space-y-0 pb-2">
+            <app-card-title class="text-sm font-medium">Awaiting Approval</app-card-title>
+            <app-icon name="circle-alert" [size]="16" class="text-muted-foreground" />
+          </app-card-header>
+          <app-card-content>
+            <div class="text-2xl font-bold">{{ dashboard.awaitingApprovalCount }}</div>
+          </app-card-content>
+        </app-card>
+
+        <app-card>
+          <app-card-header class="flex flex-row items-center justify-between space-y-0 pb-2">
+            <app-card-title class="text-sm font-medium">Confirmed</app-card-title>
+            <app-icon name="circle-check" [size]="16" class="text-muted-foreground" />
+          </app-card-header>
+          <app-card-content>
+            <div class="text-2xl font-bold">{{ dashboard.confirmedCount }}</div>
+            <p class="text-xs text-muted-foreground">{{ approvedCount }} approved · awaiting confirm</p>
+          </app-card-content>
+        </app-card>
+      </div>
+
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        @for (chip of statusChips; track chip.key) {
+          <app-card class="p-3 border-l-4" [ngClass]="statusChipBorderClass(chip.key)">
+            <div class="text-xs text-gray-500">{{ chip.label }}</div>
+            <div class="text-lg font-semibold mt-1">{{ statusCount(chip.key) }}</div>
+            <span class="inline-block mt-2 text-[10px] px-2 py-0.5 rounded-full" [ngClass]="statusChipBadgeClass(chip.key)">
+              {{ chip.label }}
+            </span>
+          </app-card>
+        }
+      </div>
+
+      <div class="flex flex-wrap gap-2 border-b border-gray-200 pb-2">
+        <button
+          type="button"
+          class="px-3 py-2 text-sm rounded-md transition-colors"
+          [class.bg-blue-600]="showCalendar"
+          [class.text-white]="showCalendar"
+          [class.text-gray-700]="!showCalendar"
+          (click)="showCalendar = true"
+        >
+          Booking calendars
+        </button>
+        @for (tab of tabs; track tab.id) {
+          <button
+            type="button"
+            class="px-3 py-2 text-sm rounded-md transition-colors"
+            [class.bg-blue-600]="activeTab === tab.id"
+            [class.text-white]="activeTab === tab.id"
+            [class.text-gray-700]="activeTab !== tab.id"
+            [class.hover:bg-gray-100]="activeTab !== tab.id"
+            (click)="showCalendar = false; selectTab(tab.id)"
+          >
+            {{ tab.label }}
+            <span class="ml-1 opacity-80">({{ tabCount(tab.id) }})</span>
+          </button>
+        }
+      </div>
+
+      @if (showCalendar) {
+        <app-admin-booking-calendar initialView="itineraries" />
+      } @else if (activeItineraries.length === 0) {
+        <app-card>
+          <app-card-content class="pt-6 text-center text-gray-500">
+            No itineraries in this section.
+          </app-card-content>
+        </app-card>
+      } @else {
+        <div class="grid gap-4">
+          @for (row of activeItineraries; track row.id) {
+            <app-card class="hover:shadow-lg transition-shadow">
+              <app-card-header>
+                <div class="flex justify-between items-start gap-3">
+                  <div>
+                    <app-card-title class="text-xl">{{ row.tripName }}</app-card-title>
+                    <app-card-description class="mt-1">
+                      {{ row.guestName }} · {{ row.destination }} · {{ row.daysCount }} days
+                    </app-card-description>
+                  </div>
+                  <app-badge [class]="getStatusClass(row)">{{ getStatusLabel(row) }}</app-badge>
+                </div>
+              </app-card-header>
+              <app-card-content>
+                <div class="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-3">
+                  <span>{{ formatDate(row.startDate) }} – {{ formatDate(row.endDate) }}</span>
+                  <span class="font-semibold text-green-700">{{ rowPrice(row) | currency }}</span>
+                </div>
+                @if (pricingSummary(row); as summary) {
+                  <p class="text-xs text-gray-600 mb-3">{{ summary }}</p>
+                }
+                <div class="flex flex-wrap gap-2">
+                  @if (canReturnedTabContinue(row)) {
+                    <button type="button" class="btn btn-primary btn-sm" (click)="goToPricing(row.id)">
+                      Continue to Pricing
+                    </button>
+                    <button type="button" class="btn btn-outline btn-sm" (click)="returnForCorrection(row.id)">
+                      Return for Correction
+                    </button>
+                  } @else {
+                    @if (canReview(row)) {
+                      <button type="button" class="btn btn-outline btn-sm" (click)="goToAgencyReview()">
+                        Review
+                      </button>
+                    }
+                    @if (canOpenPricing(row)) {
+                      <button type="button" class="btn btn-primary btn-sm" (click)="goToPricing(row.id)">
+                        {{ normalizeStatus(row) === 'priced' ? 'View Pricing' : 'Create Pricing' }}
+                      </button>
+                    }
+                    @if (canReturnForCorrection(row)) {
+                      <button type="button" class="btn btn-outline btn-sm" (click)="returnForCorrection(row.id)">
+                        Return for Correction
+                      </button>
+                    }
+                  }
+                  @if (canShowConversation(row)) {
+                    <button type="button" class="btn btn-outline btn-sm" (click)="openConversation(row.id)">
+                      View Conversation
+                    </button>
+                  }
+                  @if (canApproveFinal(row)) {
+                    <button
+                      type="button"
+                      class="btn btn-primary btn-sm"
+                      (click)="approveFinal(row.id)"
+                      [disabled]="busyIds.has(row.id)"
+                    >
+                      Approve
+                    </button>
+                  }
+                  @if (canConfirm(row)) {
+                    <button
+                      type="button"
+                      class="btn btn-primary btn-sm"
+                      (click)="confirm(row.id)"
+                      [disabled]="busyIds.has(row.id)"
+                    >
+                      Confirm
+                    </button>
+                  }
+                  @if (canReject(row)) {
+                    <button
+                      type="button"
+                      class="btn btn-outline btn-sm"
+                      (click)="reject(row.id)"
+                      [disabled]="busyIds.has(row.id)"
+                    >
+                      Reject
+                    </button>
+                  }
+                  @if (canUpdateMargin(row)) {
+                    <button type="button" class="btn btn-outline btn-sm" (click)="updateMargin(row.id)">
+                      Update Margin
+                    </button>
+                  }
+                </div>
+              </app-card-content>
+            </app-card>
+          }
+        </div>
+      }
+    }
+  </div>
+
+  <app-conversation-modal
+    [open]="conversationOpen"
+    [itineraryId]="conversationItineraryId"
+    [currentRole]="'ADMIN'"
+    [currentUserId]="currentUserId()"
+    [title]="'Itinerary Conversation'"
+    (openChange)="conversationOpen = $event"
+  />
+</app-layout>

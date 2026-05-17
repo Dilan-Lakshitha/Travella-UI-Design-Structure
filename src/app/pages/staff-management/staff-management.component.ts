@@ -1,13 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LayoutComponent } from '../../components/layout/layout.component';
 import { CardComponent, CardContentComponent } from '../../components/ui/card.component';
 import { BadgeComponent } from '../../components/ui/badge.component';
 import { TabsComponent, TabsListComponent, TabsTriggerComponent, TabsContentComponent } from '../../components/ui/tabs.component';
 import { TableComponent, TableHeaderComponent, TableBodyComponent, TableRowComponent, TableHeadComponent, TableCellComponent } from '../../components/ui/table.component';
-import { DialogComponent, DialogHeaderComponent, DialogTitleComponent } from '../../components/ui/dialog.component';
-import { CalendarComponent } from '../../components/ui/calendar.component';
-import { IconComponent } from '../../components/ui/icons.component';
+import { AdminBookingCalendarComponent } from '../../components/admin-booking-calendar/admin-booking-calendar.component';
 import { StaffService } from '../../services/staff.service';
 import { ToastService } from '../../services/toast.service';
 import type { DriverDto, GuideDto } from '../../models/staff.models';
@@ -31,22 +29,15 @@ import type { DriverDto, GuideDto } from '../../models/staff.models';
     TableRowComponent,
     TableHeadComponent,
     TableCellComponent,
-    DialogComponent,
-    DialogHeaderComponent,
-    DialogTitleComponent,
-    CalendarComponent,
-    IconComponent
+    AdminBookingCalendarComponent,
   ],
   templateUrl: './staff-management.component.html',
-  styleUrls: ['./staff-management.component.scss']
+  styleUrls: ['./staff-management.component.scss'],
 })
-export class StaffManagementComponent {
+export class StaffManagementComponent implements OnInit {
   constructor(private staffService: StaffService, private toastService: ToastService) {}
 
   activeTab = 'drivers';
-  isCalendarDialogOpen = false;
-  selectedStaffName = '';
-  selectedDate: Date | null = new Date();
 
   drivers: DriverDto[] = [];
   guides: GuideDto[] = [];
@@ -63,7 +54,7 @@ export class StaffManagementComponent {
     try {
       const [drivers, guides] = await Promise.all([
         this.staffService.getDrivers(),
-        this.staffService.getGuides()
+        this.staffService.getGuides(),
       ]);
       this.drivers = drivers ?? [];
       this.guides = guides ?? [];
@@ -76,21 +67,14 @@ export class StaffManagementComponent {
     }
   }
 
-  getStatusBadgeClass(status: string): string {
-    switch (status) {
-      case 'Available':
-        return 'bg-green-100 text-green-800';
-      case 'On Trip':
-        return 'bg-blue-100 text-blue-800';
-      case 'Off Duty':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return '';
+  availabilityBadgeClass(status?: string | null): string {
+    const value = (status ?? 'AVAILABLE').toUpperCase();
+    if (value === 'ON_TRIP' || value === 'OFF_DUTY' || value === 'UNAVAILABLE') {
+      return 'bg-gray-100 text-gray-800';
     }
-  }
-
-  openCalendarDialog(name: string): void {
-    this.selectedStaffName = name;
-    this.isCalendarDialogOpen = true;
+    if (value === 'BOOKED') {
+      return 'bg-rose-100 text-rose-800';
+    }
+    return 'bg-emerald-100 text-emerald-800';
   }
 }

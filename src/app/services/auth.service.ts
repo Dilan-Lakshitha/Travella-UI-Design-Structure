@@ -178,6 +178,10 @@ export class AuthService {
     }
   }
 
+  getToken(): string | null {
+    return localStorage.getItem(this.tokenKey);
+  }
+
   getUser(): User | null {
     return this.userSignal();
   }

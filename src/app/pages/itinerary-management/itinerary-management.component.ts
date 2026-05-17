@@ -185,7 +185,7 @@ export class ItineraryManagementComponent implements OnInit {
           destination: r.destination ?? '',
           startDate: r.startDate,
           days,
-          status: r.status ?? '',
+          status: r.status ?? rawStatus,
           rawStatus,
           timeline: this.buildTimeline(r.startDate, days, rawStatus, r.destination ?? '')
         } as Itinerary;

@@ -29,13 +29,27 @@ export class AdminService {
     );
   }
 
-  createDriver(payload: { name: string; phone: string; experience: number; availability: string }): Promise<{ id: number }> {
+  createDriver(payload: {
+    name: string;
+    phone: string;
+    experience: number;
+    availability: string;
+    language: string;
+    email?: string;
+  }): Promise<{ id: number }> {
     return firstValueFrom(
       this.http.post<{ id: number }>(`${API_BASE_URL}/api/admin/drivers`, payload)
     );
   }
 
-  createGuide(payload: { name: string; phone: string; experience: number; availability: string }): Promise<{ id: number }> {
+  createGuide(payload: {
+    name: string;
+    phone: string;
+    experience: number;
+    availability: string;
+    language: string;
+    email?: string;
+  }): Promise<{ id: number }> {
     return firstValueFrom(
       this.http.post<{ id: number }>(`${API_BASE_URL}/api/admin/guides`, payload)
     );

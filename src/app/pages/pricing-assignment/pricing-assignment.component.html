@@ -1,4 +1,4 @@
-    <app-layout title="Pricing & Staff Assignment" role="STAFF">
+    <app-layout title="Pricing & Staff Assignment" [role]="layoutRole">
       <div class="max-w-4xl mx-auto space-y-6">
         @if (isLoading) {
           <app-card>
@@ -59,6 +59,7 @@
                   id="vehicle"
                   type="number"
                   [(ngModel)]="vehicleCost"
+                  [disabled]="!canEditPricing"
                 />
               </div>
 
@@ -71,6 +72,7 @@
                   id="driver"
                   type="number"
                   [(ngModel)]="driverCost"
+                  [disabled]="!canEditPricing"
                 />
               </div>
 
@@ -83,6 +85,7 @@
                   id="guide"
                   type="number"
                   [(ngModel)]="guideCost"
+                  [disabled]="!canEditPricing"
                 />
               </div>
 
@@ -95,6 +98,7 @@
                   id="accommodation"
                   type="number"
                   [(ngModel)]="accommodationCost"
+                  [disabled]="!canEditPricing"
                 />
               </div>
 
@@ -107,6 +111,7 @@
                   id="mileageRate"
                   type="number"
                   [(ngModel)]="mileageRate"
+                  [disabled]="!canEditPricing"
                 />
               </div>
 
@@ -119,6 +124,7 @@
                   id="totalKm"
                   type="number"
                   [(ngModel)]="totalKm"
+                  [disabled]="!canEditPricing"
                 />
               </div>
 
@@ -131,6 +137,7 @@
                   id="profitMargin"
                   type="number"
                   [(ngModel)]="profitMargin"
+                  [disabled]="!canEditPricing && !canEditMarginOnly"
                 />
               </div>
 
@@ -139,6 +146,7 @@
                 <app-select
                   id="mealPlan"
                   [(ngModel)]="mealPlan"
+                  [disabled]="!canEditPricing"
                   [options]="[
                     { value: 'BB', label: 'BB' },
                     { value: 'HB', label: 'HB' },
@@ -152,13 +160,36 @@
             <div class="pt-4 border-t">
               <div class="flex justify-between items-center">
                 <span class="text-lg font-semibold">Total Package Cost:</span>
-                <span class="text-2xl font-bold text-blue-600">
-                  {{ '$' + (calculateTotal() || 0).toFixed(2) }}
-                </span>
+                <div class="text-right">
+                  <span class="text-2xl font-bold text-blue-600">{{ displayTotal | currency }}</span>
+                  @if (savedPricing) {
+                    <p class="text-xs text-gray-500">From saved pricing (server calculated)</p>
+                  } @else {
+                    <p class="text-xs text-gray-500">Preview — save to persist</p>
+                  }
+                </div>
               </div>
             </div>
           </app-card-content>
         </app-card>
+
+        @if (savedPricing) {
+          <app-card>
+            <app-card-header>
+              <app-card-title>Saved Pricing Breakdown</app-card-title>
+            </app-card-header>
+            <app-card-content class="grid grid-cols-2 gap-2 text-sm">
+              <div>Driver: {{ savedPricing.driverCost | currency }}</div>
+              <div>Guide: {{ savedPricing.guideCost | currency }}</div>
+              <div>Vehicle: {{ savedPricing.vehicleCost | currency }}</div>
+              <div>Mileage: {{ savedPricing.mileageRate | currency }} × {{ savedPricing.totalKm }} km</div>
+              <div>Accommodation: {{ savedPricing.accommodationCost | currency }}</div>
+              <div>Meal plan: {{ savedPricing.mealPlan }}</div>
+              <div>Margin: {{ savedPricing.profitMargin }}%</div>
+              <div class="font-semibold col-span-2">Total: {{ savedPricing.totalAmount | currency }}</div>
+            </app-card-content>
+          </app-card>
+        }
 
         <!-- Staff Assignment -->
         <app-card>
@@ -201,15 +232,24 @@
         </app-card>
 
         <!-- Action Buttons -->
-        <div class="flex justify-end space-x-3">
-          <button class="btn btn-outline" [disabled]="isSubmitting">
-            <app-icon name="save" [size]="16" class="mr-2" />
-            Save Draft
-          </button>
-          <button class="btn btn-primary" (click)="handleGeneratePackage()" [disabled]="isSubmitting">
-            <app-icon name="send" [size]="16" class="mr-2" />
-            @if (isSubmitting) { Working... } @else { Generate Package & Send to Admin }
-          </button>
+        <div class="flex flex-wrap justify-end gap-3">
+          @if (canEditPricing) {
+            <button type="button" class="btn btn-primary" (click)="savePricing()" [disabled]="isSubmitting">
+              <app-icon name="save" [size]="16" class="mr-2" />
+              @if (isSubmitting) { Working... } @else { Save Pricing }
+            </button>
+          }
+          @if (canSendToOwner) {
+            <button type="button" class="btn btn-primary" (click)="sendToOwner()" [disabled]="isSubmitting">
+              <app-icon name="send" [size]="16" class="mr-2" />
+              @if (isSubmitting) { Working... } @else { Approve & Send to Owner }
+            </button>
+          }
+          @if (canEditMarginOnly) {
+            <button type="button" class="btn btn-outline" (click)="updateAdminMargin()" [disabled]="isSubmitting">
+              Update Profit Margin
+            </button>
+          }
         </div>
       </div>
     </app-layout>

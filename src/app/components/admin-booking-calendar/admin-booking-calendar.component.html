@@ -1,0 +1,150 @@
+<app-card class="booking-panel">
+  <app-card-header>
+    <app-card-title>Booking calendars</app-card-title>
+    <app-card-description>View driver, guide, and itinerary bookings by date range</app-card-description>
+  </app-card-header>
+  <app-card-content class="booking-panel__content">
+    <div class="booking-panel__tabs">
+      @for (v of views; track v.id) {
+        <button
+          type="button"
+          class="booking-panel__tab"
+          [class.booking-panel__tab--active]="activeView === v.id"
+          (click)="setView(v.id)"
+        >
+          {{ v.label }}
+        </button>
+      }
+    </div>
+
+    <div class="booking-panel__filters">
+      <div class="booking-panel__field">
+        <app-label for="startDate">Start date</app-label>
+        <app-input id="startDate" type="date" [(ngModel)]="startDate" />
+      </div>
+      <div class="booking-panel__field">
+        <app-label for="endDate">End date</app-label>
+        <app-input id="endDate" type="date" [(ngModel)]="endDate" />
+      </div>
+      @if (activeView === 'driver' || activeView === 'guide') {
+        <div class="booking-panel__field">
+          <app-label for="filterStaff">Staff member</app-label>
+          <app-select id="filterStaff" [(ngModel)]="filterStaffId" [options]="staffFilterOptions" />
+        </div>
+      }
+      @if (activeView === 'itineraries') {
+        <div class="booking-panel__field">
+          <app-label for="filterDriver">Driver</app-label>
+          <app-select id="filterDriver" [(ngModel)]="filterDriverId" [options]="driverFilterOptions" />
+        </div>
+        <div class="booking-panel__field">
+          <app-label for="filterGuide">Guide</app-label>
+          <app-select id="filterGuide" [(ngModel)]="filterGuideId" [options]="guideFilterOptions" />
+        </div>
+      }
+    </div>
+
+    <button type="button" class="btn btn-primary btn-sm" (click)="load()" [disabled]="isLoading">
+      @if (isLoading) { Loading... } @else { Refresh calendar }
+    </button>
+
+    @if (errorMessage) {
+      <p class="booking-panel__error">{{ errorMessage }}</p>
+    }
+
+    @if (activeView === 'driver' || activeView === 'guide') {
+      <app-booking-availability-calendar
+        [startDate]="startDate"
+        [endDate]="endDate"
+        [bookings]="staffBookings"
+        [staffId]="selectedStaffId"
+        [title]="calendarTitle"
+      />
+    }
+
+    @if (activeView === 'driver' || activeView === 'guide') {
+      <div class="booking-panel__table-wrap">
+        <app-table>
+          <app-table-header>
+            <app-table-row>
+              <app-table-head>Name</app-table-head>
+              <app-table-head>Role</app-table-head>
+              <app-table-head>Language</app-table-head>
+              <app-table-head>Email</app-table-head>
+              <app-table-head>Status</app-table-head>
+              <app-table-head>Itinerary</app-table-head>
+              <app-table-head>Booked range</app-table-head>
+              <app-table-head>Booking status</app-table-head>
+            </app-table-row>
+          </app-table-header>
+          <app-table-body>
+            @for (row of filteredStaffBookings; track trackStaffRow(row)) {
+              <app-table-row>
+                <app-table-cell class="font-medium">{{ row.staffName }}</app-table-cell>
+                <app-table-cell>{{ row.role }}</app-table-cell>
+                <app-table-cell>{{ row.language || '—' }}</app-table-cell>
+                <app-table-cell class="text-sm">{{ row.email || '—' }}</app-table-cell>
+                <app-table-cell>
+                  <span class="status-pill" [class]="availabilityClass(row.availabilityStatus)">
+                    {{ row.availabilityStatus }}
+                  </span>
+                </app-table-cell>
+                <app-table-cell>
+                  @if (row.itineraryId) {
+                    #{{ row.itineraryId }} — {{ row.itineraryTitle }}
+                  } @else {
+                    —
+                  }
+                </app-table-cell>
+                <app-table-cell>{{ row.bookedDateRange || dateRangeLabel(row) }}</app-table-cell>
+                <app-table-cell>{{ row.bookedStatus || row.status || '—' }}</app-table-cell>
+              </app-table-row>
+            }
+          </app-table-body>
+        </app-table>
+      </div>
+    } @else {
+      <div class="booking-panel__table-wrap">
+        <app-table>
+          <app-table-header>
+            <app-table-row>
+              <app-table-head>Itinerary</app-table-head>
+              <app-table-head>Booked range</app-table-head>
+              <app-table-head>Status</app-table-head>
+              <app-table-head>Driver</app-table-head>
+              <app-table-head>Guide</app-table-head>
+            </app-table-row>
+          </app-table-header>
+          <app-table-body>
+            @if (itineraryBookings.length === 0 && !isLoading) {
+              <app-table-row>
+                <app-table-cell class="text-center text-gray-500 py-6">No itinerary bookings in this range</app-table-cell>
+              </app-table-row>
+            }
+            @for (row of itineraryBookings; track row.itineraryId) {
+              <app-table-row>
+                <app-table-cell class="font-medium">#{{ row.itineraryId }} — {{ row.itineraryTitle }}</app-table-cell>
+                <app-table-cell>{{ row.bookedDateRange || (formatDate(row.startDate) + ' – ' + formatDate(row.endDate)) }}</app-table-cell>
+                <app-table-cell>
+                  <span class="status-pill" [class]="itineraryStatusClass(row.itineraryStatus)">
+                    {{ row.itineraryStatus }}
+                  </span>
+                </app-table-cell>
+                <app-table-cell>
+                  @if (row.driverName) {
+                    {{ row.driverName }}@if (row.driverLanguage) { ({{ row.driverLanguage }}) }
+                  } @else { — }
+                </app-table-cell>
+                <app-table-cell>
+                  @if (row.guideName) {
+                    {{ row.guideName }}@if (row.guideLanguage) { ({{ row.guideLanguage }}) }
+                  } @else { — }
+                </app-table-cell>
+              </app-table-row>
+            }
+          </app-table-body>
+        </app-table>
+      </div>
+    }
+  </app-card-content>
+</app-card>

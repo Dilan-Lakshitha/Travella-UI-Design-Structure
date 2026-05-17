@@ -6,12 +6,18 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="relative w-full overflow-auto">
-      <table [class]="'w-full caption-bottom text-sm ' + class">
+    <div class="relative w-full overflow-auto staff-data-table">
+      <table [class]="'w-full caption-bottom text-sm border-collapse table-auto min-w-[720px] ' + class">
         <ng-content />
       </table>
     </div>
-  `
+  `,
+  styles: [`
+    :host {
+      display: block;
+      width: 100%;
+    }
+  `],
 })
 export class TableComponent {
   @Input() class = '';
@@ -22,10 +28,11 @@ export class TableComponent {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <thead class="[&_tr]:border-b">
+    <thead class="[&_tr]:border-b bg-muted/40">
       <ng-content />
     </thead>
-  `
+  `,
+  styles: [`:host { display: contents; }`],
 })
 export class TableHeaderComponent {}
 
@@ -37,7 +44,8 @@ export class TableHeaderComponent {}
     <tbody class="[&_tr:last-child]:border-0">
       <ng-content />
     </tbody>
-  `
+  `,
+  styles: [`:host { display: contents; }`],
 })
 export class TableBodyComponent {}
 
@@ -49,7 +57,8 @@ export class TableBodyComponent {}
     <tr class="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
       <ng-content />
     </tr>
-  `
+  `,
+  styles: [`:host { display: contents; }`],
 })
 export class TableRowComponent {}
 
@@ -58,10 +67,11 @@ export class TableRowComponent {}
   standalone: true,
   imports: [CommonModule],
   template: `
-    <th [class]="'h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 ' + class">
+    <th [class]="'h-12 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap [&:has([role=checkbox])]:pr-0 ' + class">
       <ng-content />
     </th>
-  `
+  `,
+  styles: [`:host { display: contents; }`],
 })
 export class TableHeadComponent {
   @Input() class = '';
@@ -72,10 +82,11 @@ export class TableHeadComponent {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <td [class]="'p-4 align-middle [&:has([role=checkbox])]:pr-0 ' + class">
+    <td [class]="'px-4 py-3 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 ' + class">
       <ng-content />
     </td>
-  `
+  `,
+  styles: [`:host { display: contents; }`],
 })
 export class TableCellComponent {
   @Input() class = '';

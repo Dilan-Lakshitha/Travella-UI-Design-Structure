@@ -2,13 +2,33 @@ import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { LayoutComponent } from '../../components/layout/layout.component';
-import { CardComponent, CardHeaderComponent, CardTitleComponent, CardDescriptionComponent, CardContentComponent } from '../../components/ui/card.component';
+import {
+  CardComponent,
+  CardHeaderComponent,
+  CardTitleComponent,
+  CardDescriptionComponent,
+  CardContentComponent,
+} from '../../components/ui/card.component';
 import { IconComponent } from '../../components/ui/icons.component';
 import { BadgeComponent } from '../../components/ui/badge.component';
 import { ToastService } from '../../services/toast.service';
 import { ItineraryService } from '../../services/itinerary.service';
-import { StaffService } from '../../services/staff.service';
-import type { CompanyItineraryRow } from '../../models/itinerary.models';
+import type { AdminDashboardResponse, AdminDashboardTab, AgencyReviewRow } from '../../models/itinerary.models';
+import {
+  canStaffOpenConversation,
+  canStaffReturnForCorrection,
+  itineraryStatusClass,
+  itineraryStatusLabel,
+  isResubmitted,
+} from '../../utils/itinerary-status.util';
+import { ConversationModalComponent } from '../../components/conversation-modal/conversation-modal.component';
+import { AuthService } from '../../services/auth.service';
+import { AdminBookingCalendarComponent } from '../../components/admin-booking-calendar/admin-booking-calendar.component';
+
+interface TabConfig {
+  id: AdminDashboardTab;
+  label: string;
+}
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -22,225 +42,79 @@ import type { CompanyItineraryRow } from '../../models/itinerary.models';
     CardDescriptionComponent,
     CardContentComponent,
     IconComponent,
-    BadgeComponent
+    BadgeComponent,
+    AdminBookingCalendarComponent,
+    ConversationModalComponent,
   ],
-  template: `
-    <app-layout title="System Overview" role="ADMIN">
-      <div class="space-y-6">
-        @if (isLoading) {
-          <app-card>
-            <app-card-content class="pt-6 text-center text-gray-500">
-              Loading company itineraries...
-            </app-card-content>
-          </app-card>
-        }
-        @if (!isLoading && errorMessage) {
-          <app-card>
-            <app-card-content class="pt-6 text-center text-red-600">
-              {{ errorMessage }}
-            </app-card-content>
-          </app-card>
-        }
-
-        <!-- Key Metrics -->
-        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <app-card>
-            <app-card-header class="flex flex-row items-center justify-between space-y-0 pb-2">
-              <app-card-title class="text-sm font-medium">Total Itineraries</app-card-title>
-              <app-icon name="file-text" [size]="16" class="text-muted-foreground" />
-            </app-card-header>
-            <app-card-content>
-              <div class="text-2xl font-bold">{{ itineraries.length }}</div>
-              <p class="text-xs text-muted-foreground">Across all statuses</p>
-            </app-card-content>
-          </app-card>
-
-          <app-card>
-            <app-card-header class="flex flex-row items-center justify-between space-y-0 pb-2">
-              <app-card-title class="text-sm font-medium">Pending Admin</app-card-title>
-              <app-icon name="clock" [size]="16" class="text-muted-foreground" />
-            </app-card-header>
-            <app-card-content>
-              <div class="text-2xl font-bold">{{ pendingAdmin.length }}</div>
-              <p class="text-xs text-muted-foreground">Sent to admin for decision</p>
-            </app-card-content>
-          </app-card>
-
-          <app-card>
-            <app-card-header class="flex flex-row items-center justify-between space-y-0 pb-2">
-              <app-card-title class="text-sm font-medium">Awaiting Confirm</app-card-title>
-              <app-icon name="circle-check" [size]="16" class="text-muted-foreground" />
-            </app-card-header>
-            <app-card-content>
-              <div class="text-2xl font-bold">{{ awaitingConfirm.length }}</div>
-              <p class="text-xs text-muted-foreground">Approved by admin</p>
-            </app-card-content>
-          </app-card>
-
-          <app-card>
-            <app-card-header class="flex flex-row items-center justify-between space-y-0 pb-2">
-              <app-card-title class="text-sm font-medium">Staff Resources</app-card-title>
-              <app-icon name="users" [size]="16" class="text-muted-foreground" />
-            </app-card-header>
-            <app-card-content>
-              <div class="text-2xl font-bold">{{ staffCount }}</div>
-              <p class="text-xs text-muted-foreground">{{ driverCount }} drivers, {{ guideCount }} guides</p>
-            </app-card-content>
-          </app-card>
-        </div>
-
-        <app-card>
-          <app-card-header>
-            <app-card-title>Submitted itineraries (all agencies)</app-card-title>
-            <app-card-description>Every submitted itinerary in the system (owner view)</app-card-description>
-          </app-card-header>
-          <app-card-content>
-            @if (ownerSubmitted.length === 0) {
-              <div class="text-center text-gray-500 py-4">No submitted itineraries.</div>
-            } @else {
-              <div class="space-y-2 max-h-72 overflow-y-auto">
-                @for (row of ownerSubmitted; track row.id) {
-                  <div class="flex flex-wrap items-center justify-between gap-2 border rounded-md p-3 text-sm">
-                    <div class="min-w-0">
-                      <div class="font-medium truncate">{{ row.tripName }}</div>
-                      <div class="text-gray-600 truncate">
-                        {{ row.guestName }} · {{ row.destination }} · {{ row.daysCount }} days
-                        @if (row.companyId) {
-                          <span> · Company #{{ row.companyId }}</span>
-                        }
-                      </div>
-                    </div>
-                    <app-badge class="bg-green-100 text-green-800">{{ row.rawStatus }}</app-badge>
-                  </div>
-                }
-              </div>
-            }
-          </app-card-content>
-        </app-card>
-
-        <app-card>
-          <app-card-header>
-            <app-card-title>Approved Itineraries</app-card-title>
-            <app-card-description>Review price and adjust margin before final confirmation.</app-card-description>
-          </app-card-header>
-          <app-card-content>
-            @if (approvedItineraries.length === 0) {
-              <div class="text-center text-gray-500 py-4">No approved itineraries.</div>
-            } @else {
-              <div class="space-y-2">
-                @for (row of approvedItineraries; track row.id) {
-                  <div class="border rounded-md p-3 flex items-center justify-between gap-2">
-                    <div class="text-sm">
-                      <div class="font-medium">{{ row.tripName }}</div>
-                      <div class="text-gray-600">{{ row.guestName }} · {{ row.destination }}</div>
-                      <div class="text-gray-700">Price: {{ row.totalAmount ?? 0 | currency }}</div>
-                    </div>
-                    <button class="btn btn-outline btn-sm" (click)="updateMargin(row.id)">Update Margin</button>
-                  </div>
-                }
-              </div>
-            }
-          </app-card-content>
-        </app-card>
-
-        <!-- Admin Actions -->
-        <app-card>
-          <app-card-header>
-            <app-card-title>Pending Admin Actions</app-card-title>
-            <app-card-description>Approve, reject, or confirm itineraries in your queue</app-card-description>
-          </app-card-header>
-          <app-card-content>
-            @if (pendingAdmin.length === 0 && awaitingConfirm.length === 0) {
-              <div class="text-center text-gray-500 py-6">No admin actions pending.</div>
-            } @else {
-              <div class="space-y-3">
-                @for (row of pendingAdmin; track row.id) {
-                  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border rounded-lg p-4">
-                    <div class="min-w-0">
-                      <div class="flex items-center gap-2">
-                        <div class="font-semibold truncate">{{ row.tripName }}</div>
-                        <app-badge class="bg-yellow-100 text-yellow-800">SENT_TO_ADMIN</app-badge>
-                      </div>
-                      <div class="text-sm text-gray-600 truncate">
-                        Guest: {{ row.guestName }} · {{ row.destination }} · {{ row.daysCount }} days
-                      </div>
-                    </div>
-                    <div class="flex gap-2">
-                      <button class="btn btn-primary btn-sm" (click)="approveFinal(row.id)" [disabled]="busyIds.has(row.id)">
-                        @if (busyIds.has(row.id)) { Working... } @else { Approve Final }
-                      </button>
-                      <button class="btn btn-outline btn-sm" (click)="reject(row.id)" [disabled]="busyIds.has(row.id)">
-                        Reject
-                      </button>
-                      <button class="btn btn-outline btn-sm" (click)="navigateTo('/admin/itineraries')">
-                        View
-                      </button>
-                    </div>
-                  </div>
-                }
-
-                @for (row of awaitingConfirm; track row.id) {
-                  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border rounded-lg p-4">
-                    <div class="min-w-0">
-                      <div class="flex items-center gap-2">
-                        <div class="font-semibold truncate">{{ row.tripName }}</div>
-                        <app-badge class="bg-blue-100 text-blue-800">Approved</app-badge>
-                      </div>
-                      <div class="text-sm text-gray-600 truncate">
-                        Guest: {{ row.guestName }} · {{ row.destination }} · {{ row.daysCount }} days
-                      </div>
-                    </div>
-                    <div class="flex gap-2">
-                      <button class="btn btn-primary btn-sm" (click)="confirm(row.id)" [disabled]="busyIds.has(row.id)">
-                        @if (busyIds.has(row.id)) { Working... } @else { Confirm }
-                      </button>
-                      <button class="btn btn-outline btn-sm" (click)="reject(row.id)" [disabled]="busyIds.has(row.id)">
-                        Reject
-                      </button>
-                      <button class="btn btn-outline btn-sm" (click)="navigateTo('/admin/itineraries')">
-                        View
-                      </button>
-                    </div>
-                  </div>
-                }
-              </div>
-            }
-          </app-card-content>
-        </app-card>
-      </div>
-    </app-layout>
-  `
+  templateUrl: './admin-dashboard.component.html',
 })
 export class AdminDashboardComponent implements OnInit {
   private router = inject(Router);
-
   private toastService = inject(ToastService);
   private itineraryService = inject(ItineraryService);
-  private staffService = inject(StaffService);
+  private authService = inject(AuthService);
 
-  itineraries: CompanyItineraryRow[] = [];
-  ownerSubmitted: CompanyItineraryRow[] = [];
+  conversationOpen = false;
+  conversationItineraryId: number | null = null;
+  readonly tabs: TabConfig[] = [
+    { id: 'all', label: 'All' },
+    { id: 'pending-review', label: 'Pending Review' },
+    { id: 'in-review', label: 'In Review' },
+    { id: 'returned', label: 'Returned / Resubmitted' },
+    { id: 'priced', label: 'Priced' },
+    { id: 'awaiting-approval', label: 'Sent to Owner' },
+    { id: 'approved', label: 'Approved' },
+    { id: 'confirmed', label: 'Confirmed' },
+    { id: 'rejected', label: 'Rejected' },
+  ];
+
+  readonly statusChips = [
+    { key: 'draft', label: 'Draft' },
+    { key: 'submitted', label: 'Submitted' },
+    { key: 'under_review', label: 'In Review' },
+    { key: 'returned_for_correction', label: 'Returned' },
+    { key: 'resubmitted', label: 'Resubmitted' },
+    { key: 'priced', label: 'Priced' },
+    { key: 'sent_to_admin', label: 'Awaiting Approval' },
+    { key: 'approved_by_admin', label: 'Approved' },
+    { key: 'confirmed', label: 'Confirmed' },
+    { key: 'rejected', label: 'Rejected' },
+  ];
+
+  dashboard: AdminDashboardResponse | null = null;
+  activeTab: AdminDashboardTab = 'all';
+  showCalendar = false;
   isLoading = false;
   errorMessage = '';
   busyIds = new Set<number>();
 
-  driverCount = 0;
-  guideCount = 0;
-
-  get staffCount(): number {
-    return this.driverCount + this.guideCount;
+  get approvedCount(): number {
+    return this.dashboard?.statusCounts?.['approved_by_admin'] ?? 0;
   }
 
-  get pendingAdmin(): CompanyItineraryRow[] {
-    return this.itineraries.filter(i => String(i.rawStatus ?? '').toLowerCase() === 'sent_to_admin');
-  }
-
-  get awaitingConfirm(): CompanyItineraryRow[] {
-    return this.itineraries.filter(i => String(i.rawStatus ?? '').toLowerCase() === 'approved_by_admin');
-  }
-
-  get approvedItineraries(): CompanyItineraryRow[] {
-    return this.itineraries.filter(i => String(i.rawStatus ?? '').toLowerCase() === 'approved_by_admin');
+  get activeItineraries(): AgencyReviewRow[] {
+    if (!this.dashboard) return [];
+    const sections = this.dashboard.sections;
+    switch (this.activeTab) {
+      case 'pending-review':
+        return sections.pendingReview;
+      case 'in-review':
+        return sections.inReview;
+      case 'returned':
+        return sections.returned;
+      case 'priced':
+        return sections.priced;
+      case 'awaiting-approval':
+        return sections.awaitingApproval;
+      case 'approved':
+        return sections.approved;
+      case 'confirmed':
+        return sections.confirmed;
+      case 'rejected':
+        return sections.rejected;
+      default:
+        return sections.all;
+    }
   }
 
   async ngOnInit(): Promise<void> {
@@ -251,26 +125,168 @@ export class AdminDashboardComponent implements OnInit {
     this.isLoading = true;
     this.errorMessage = '';
     try {
-      const [itins, ownerRows, drivers, guides] = await Promise.all([
-        this.itineraryService.getCompanyItineraries(),
-        this.itineraryService.getOwnerSubmittedItineraries().catch(() => [] as CompanyItineraryRow[]),
-        this.staffService.getDrivers(),
-        this.staffService.getGuides()
-      ]);
-      this.itineraries = itins ?? [];
-      this.ownerSubmitted = ownerRows ?? [];
-      this.driverCount = (drivers ?? []).length;
-      this.guideCount = (guides ?? []).length;
+      this.dashboard = await this.itineraryService.getAdminDashboard();
     } catch (e) {
       console.error(e);
-      this.errorMessage = 'Failed to load admin dashboard data.';
+      this.errorMessage = this.itineraryService.readApiError(e) || 'Failed to load admin dashboard.';
     } finally {
       this.isLoading = false;
     }
   }
 
-  navigateTo(path: string): void {
-    this.router.navigate([path]);
+  selectTab(tab: AdminDashboardTab): void {
+    this.activeTab = tab;
+  }
+
+  tabCount(tab: AdminDashboardTab): number {
+    if (!this.dashboard) return 0;
+    const sections = this.dashboard.sections;
+    switch (tab) {
+      case 'pending-review':
+        return sections.pendingReview.length;
+      case 'in-review':
+        return sections.inReview.length;
+      case 'returned':
+        return sections.returned.length;
+      case 'priced':
+        return sections.priced.length;
+      case 'awaiting-approval':
+        return sections.awaitingApproval.length;
+      case 'approved':
+        return sections.approved.length;
+      case 'confirmed':
+        return sections.confirmed.length;
+      case 'rejected':
+        return sections.rejected.length;
+      default:
+        return sections.all.length;
+    }
+  }
+
+  statusCount(key: string): number {
+    return this.dashboard?.statusCounts?.[key] ?? 0;
+  }
+
+  normalizeStatus(row: AgencyReviewRow): string {
+    return String(row.rawStatus ?? row.status ?? '')
+      .toLowerCase()
+      .trim();
+  }
+
+  getStatusLabel(row: AgencyReviewRow): string {
+    return itineraryStatusLabel(this.normalizeStatus(row));
+  }
+
+  getStatusClass(row: AgencyReviewRow): string {
+    return itineraryStatusClass(this.normalizeStatus(row));
+  }
+
+  statusChipBorderClass(key: string): string {
+    const borders: Record<string, string> = {
+      draft: 'border-l-gray-400',
+      submitted: 'border-l-blue-500',
+      under_review: 'border-l-yellow-500',
+      returned_for_correction: 'border-l-orange-500',
+      resubmitted: 'border-l-orange-400',
+      priced: 'border-l-purple-500',
+      sent_to_admin: 'border-l-teal-500',
+      approved_by_admin: 'border-l-green-500',
+      confirmed: 'border-l-green-800',
+      rejected: 'border-l-red-500',
+    };
+    return borders[key] ?? 'border-l-gray-300';
+  }
+
+  statusChipBadgeClass(key: string): string {
+    return itineraryStatusClass(key);
+  }
+
+  rowPrice(row: AgencyReviewRow): number {
+    return Number(row.pricing?.totalAmount ?? row.totalPrice ?? 0);
+  }
+
+  pricingSummary(row: AgencyReviewRow): string | null {
+    const p = row.pricing;
+    if (!p) return null;
+    return `Driver ${p.driverCost} · Guide ${p.guideCost} · Vehicle ${p.vehicleCost} · Margin ${p.profitMargin}%`;
+  }
+
+  formatDate(dateStr: string | null | undefined): string {
+    if (!dateStr) return '—';
+    return new Date(dateStr).toLocaleDateString();
+  }
+
+  canReview(row: AgencyReviewRow): boolean {
+    const s = this.normalizeStatus(row);
+    return s === 'submitted' || s === 'under_review';
+  }
+
+  canOpenPricing(row: AgencyReviewRow): boolean {
+    const s = this.normalizeStatus(row);
+    return ['under_review', 'priced', 'sent_to_admin', 'approved_by_admin'].includes(s);
+  }
+
+  canReturnedTabContinue(row: AgencyReviewRow): boolean {
+    return this.activeTab === 'returned' && isResubmitted(this.normalizeStatus(row));
+  }
+
+  canReturnForCorrection(row: AgencyReviewRow): boolean {
+    return canStaffReturnForCorrection(this.normalizeStatus(row));
+  }
+
+  canShowConversation(row: AgencyReviewRow): boolean {
+    return canStaffOpenConversation(this.normalizeStatus(row));
+  }
+
+  openConversation(itineraryId: number): void {
+    this.conversationItineraryId = itineraryId;
+    this.conversationOpen = true;
+  }
+
+  currentUserId(): number | null {
+    return this.authService.getUser()?.userId ?? null;
+  }
+
+  canApproveFinal(row: AgencyReviewRow): boolean {
+    return this.normalizeStatus(row) === 'sent_to_admin';
+  }
+
+  canConfirm(row: AgencyReviewRow): boolean {
+    return this.normalizeStatus(row) === 'approved_by_admin';
+  }
+
+  canReject(row: AgencyReviewRow): boolean {
+    const s = this.normalizeStatus(row);
+    return s !== 'rejected' && s !== 'confirmed';
+  }
+
+  canUpdateMargin(row: AgencyReviewRow): boolean {
+    const s = this.normalizeStatus(row);
+    return s === 'approved_by_admin' || s === 'sent_to_admin';
+  }
+
+  goToAgencyReview(): void {
+    this.router.navigate(['/agency/review']);
+  }
+
+  goToPricing(id: number): void {
+    this.router.navigate(['/agency/pricing', id]);
+  }
+
+  async returnForCorrection(itineraryId: number): Promise<void> {
+    const message = prompt('Correction notes for the traveler:');
+    if (message == null) return;
+    if (this.busyIds.has(itineraryId)) return;
+    this.busyIds.add(itineraryId);
+    try {
+      await this.itineraryService.requestCorrection(itineraryId, message);
+      this.toastService.info('Returned for correction.');
+      await this.refresh();
+    } catch (e) {
+      this.toastService.error(this.itineraryService.readApiError(e));
+    } finally {
+      this.busyIds.delete(itineraryId);
+    }
   }
 
   async approveFinal(itineraryId: number): Promise<void> {
@@ -278,11 +294,10 @@ export class AdminDashboardComponent implements OnInit {
     this.busyIds.add(itineraryId);
     try {
       await this.itineraryService.adminApprove(itineraryId);
-      this.toastService.success('Approved by admin.');
+      this.toastService.success('Itinerary approved.');
       await this.refresh();
     } catch (e) {
-      console.error(e);
-      this.toastService.error('Failed to approve.');
+      this.toastService.error(this.itineraryService.readApiError(e));
     } finally {
       this.busyIds.delete(itineraryId);
     }
@@ -293,11 +308,10 @@ export class AdminDashboardComponent implements OnInit {
     this.busyIds.add(itineraryId);
     try {
       await this.itineraryService.confirmItinerary(itineraryId);
-      this.toastService.success('Itinerary confirmed.');
+      this.toastService.success('Itinerary confirmed. Staff availability locked and notification emails sent.');
       await this.refresh();
     } catch (e) {
-      console.error(e);
-      this.toastService.error('Failed to confirm.');
+      this.toastService.error(this.itineraryService.readApiError(e));
     } finally {
       this.busyIds.delete(itineraryId);
     }
@@ -311,8 +325,7 @@ export class AdminDashboardComponent implements OnInit {
       this.toastService.error('Itinerary rejected.');
       await this.refresh();
     } catch (e) {
-      console.error(e);
-      this.toastService.error('Failed to reject.');
+      this.toastService.error(this.itineraryService.readApiError(e));
     } finally {
       this.busyIds.delete(itineraryId);
     }
@@ -331,8 +344,7 @@ export class AdminDashboardComponent implements OnInit {
       this.toastService.success('Margin updated.');
       await this.refresh();
     } catch (e) {
-      console.error(e);
-      this.toastService.error('Failed to update margin.');
+      this.toastService.error(this.itineraryService.readApiError(e));
     }
   }
 }

@@ -12,18 +12,16 @@ import {
 import { InputComponent, LabelComponent } from "../../components/ui/input.component";
 import {
   SelectComponent,
-  SelectOption,
 } from "../../components/ui/select.component";
-import {
-  AccordionComponent,
-  AccordionItemComponent,
-  AccordionTriggerComponent,
-  AccordionContentComponent,
-} from "../../components/ui/accordion.component";
 import { IconComponent } from "../../components/ui/icons.component";
 import { ToastService } from "../../services/toast.service";
 import { ItineraryService } from "@app/services/itinerary.service";
 import type { ItineraryDraftPayload, ItineraryFullApiResponse } from "@app/models/itinerary.models";
+import {
+  canTravelerEditReturned,
+  itineraryStatusClass,
+  itineraryStatusLabel,
+} from "../../utils/itinerary-status.util";
 
 interface DayPlan {
   id: number;
@@ -34,6 +32,7 @@ interface DayPlan {
   accommodation: string | null;
   expanded: boolean;
 }
+
 declare var google: any;
 
 @Component({
@@ -50,10 +49,6 @@ declare var google: any;
     InputComponent,
     LabelComponent,
     SelectComponent,
-    AccordionComponent,
-    AccordionItemComponent,
-    AccordionTriggerComponent,
-    AccordionContentComponent,
     IconComponent,
   ],
   templateUrl: "./itinerary-builder.component.html",
@@ -72,7 +67,15 @@ export class ItineraryBuilderComponent implements OnInit {
   endDate = "";
 
   itineraryId: number | null = null;
+  itineraryStatus: string | null = null;
+
   isLoadingDraft = false;
+  isSavingDraft = false;
+  isSubmitting = false;
+  isSavingAttraction = false;
+
+  readonly itineraryStatusClass = itineraryStatusClass;
+  readonly itineraryStatusLabel = itineraryStatusLabel;
 
   days: DayPlan[] = [
     {
@@ -95,21 +98,75 @@ export class ItineraryBuilderComponent implements OnInit {
   ];
 
   mealPlanOptions = [
-  { value: null, label: 'No Meal Plan' }, 
-  { value: 'BB', label: 'Bed & Breakfast (BB)' },
-  { value: 'HB', label: 'Half Board (HB)' },
-  { value: 'FB', label: 'Full Board (FB)' },
-  { value: 'AI', label: 'All Inclusive (AI)' }
-];
+    { value: null, label: "No Meal Plan" },
+    { value: "BB", label: "Bed & Breakfast (BB)" },
+    { value: "HB", label: "Half Board (HB)" },
+    { value: "FB", label: "Full Board (FB)" },
+    { value: "AI", label: "All Inclusive (AI)" },
+  ];
 
   accommodationOptions = [
-  { value: null, label: 'No Accommodation' },
-  { value: 'Hotel', label: 'Hotel' },
-  { value: 'Resort', label: 'Resort' },
-  { value: 'Hostel', label: 'Hostel' },
-  { value: 'Villa', label: 'Villa' },
-  { value: 'Apartment', label: 'Apartment' }
-];
+    { value: null, label: "No Accommodation" },
+    { value: "Hotel", label: "Hotel" },
+    { value: "Resort", label: "Resort" },
+    { value: "Hostel", label: "Hostel" },
+    { value: "Villa", label: "Villa" },
+    { value: "Apartment", label: "Apartment" },
+  ];
+
+  get isBusy(): boolean {
+    return (
+      this.isLoadingDraft ||
+      this.isSavingDraft ||
+      this.isSubmitting ||
+      this.isSavingAttraction
+    );
+  }
+
+  get loadingMessage(): string {
+    if (this.isLoadingDraft) return "Loading your itinerary…";
+    if (this.isSavingDraft) return "Saving draft…";
+    if (this.isSubmitting) return "Submitting itinerary…";
+    if (this.isSavingAttraction) return "Saving attraction…";
+    return "Working…";
+  }
+
+  get scheduledTripDays(): number | null {
+    if (!this.startDate || !this.endDate) return null;
+    const start = new Date(`${this.startDate}T12:00:00`);
+    const end = new Date(`${this.endDate}T12:00:00`);
+    if (end < start) return null;
+    return Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1;
+  }
+
+  get totalAttractions(): number {
+    return this.days.reduce(
+      (sum, day) =>
+        sum +
+        day.attractions.filter((a) => (typeof a.id === "number" && a.id > 0) || !!a.name?.trim()).length,
+      0,
+    );
+  }
+
+  get mealPlanSummary(): string {
+    const counts = new Map<string, number>();
+    for (const day of this.days) {
+      const label =
+        this.mealPlanOptions.find((o) => o.value === (day.mealPlan ?? ""))?.label ?? "No meal plan";
+      counts.set(label, (counts.get(label) ?? 0) + 1);
+    }
+    const parts = [...counts.entries()].map(([label, count]) => `${count}× ${label}`);
+    return parts.length ? parts.join(" · ") : "Not set yet";
+  }
+
+  get displayTripName(): string {
+    return this.tripName.trim() || "Untitled trip";
+  }
+
+  get isEndBeforeStart(): boolean {
+    if (!this.startDate || !this.endDate) return false;
+    return new Date(this.endDate) < new Date(this.startDate);
+  }
 
   private guestBase(): string {
     return this.router.url.includes("/traveler/") ? "/traveler" : "/guest";
@@ -129,6 +186,25 @@ export class ItineraryBuilderComponent implements OnInit {
     }
   }
 
+  formatDisplayDate(value: string): string {
+    if (!value) return "—";
+    return new Date(`${value}T12:00:00`).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  }
+
+  attractionCount(day: DayPlan): number {
+    return day.attractions.filter(
+      (a) => (typeof a.id === "number" && a.id > 0) || !!a.name?.trim(),
+    ).length;
+  }
+
+  mealPlanLabel(code: string | null): string {
+    return this.mealPlanOptions.find((o) => o.value === (code ?? ""))?.label ?? "—";
+  }
+
   private async loadDraft(id: number): Promise<void> {
     this.isLoadingDraft = true;
     try {
@@ -144,6 +220,7 @@ export class ItineraryBuilderComponent implements OnInit {
   }
 
   private applyFullResponse(full: ItineraryFullApiResponse): void {
+    this.itineraryStatus = full.itinerary.status ?? null;
     this.tripName = `Trip ${full.itinerary.id}`;
     this.startDate = (full.itinerary.startDate as string)?.substring(0, 10) ?? "";
     this.endDate = (full.itinerary.endDate as string)?.substring(0, 10) ?? "";
@@ -152,11 +229,11 @@ export class ItineraryBuilderComponent implements OnInit {
     this.days = sortedDays.map((d, idx) => {
       const atts = (full.attractions ?? []).filter((a) => a.itineraryDayId === d.id);
       const acc = (full.accommodations ?? []).find((c) => c.itineraryDayId === d.id);
-      const accommodationValue =
-        acc?.accommodationName && this.accommodationOptions.some((o) => o.value === acc.accommodationName)
-          ? acc.accommodationName!
-          : acc?.accommodationName?.toLowerCase() ?? "";
+      console.log('meal plan',acc);
+      const accommodationValue = acc?.accommodationName &&
+        this.accommodationOptions.some((o) => o.value === acc.accommodationName) ? acc.accommodationName! : (acc?.accommodationName?.toLowerCase() ?? "");
 
+        console.log('accomdation',accommodationValue);
       return {
         id: idx + 1,
         dayNumber: d.dayNumber,
@@ -269,6 +346,8 @@ export class ItineraryBuilderComponent implements OnInit {
   }
 
   async handleSaveDraft(): Promise<void> {
+    if (this.isBusy) return;
+
     if (!this.startDate || !this.endDate) {
       this.toastService.error("Please select start and end dates.");
       return;
@@ -278,24 +357,33 @@ export class ItineraryBuilderComponent implements OnInit {
       return;
     }
 
+    this.isSavingDraft = true;
     try {
       const payload = this.buildDraftPayload();
       if (this.itineraryId) {
         await this.itineraryService.updateItinerary(this.itineraryId, payload);
+        this.itineraryStatus = this.itineraryStatus ?? "draft";
         this.toastService.success("Draft saved.");
       } else {
         const id = await this.itineraryService.createItinerary(payload);
         this.itineraryId = id;
+        this.itineraryStatus = "draft";
         this.toastService.success("Draft saved.");
-        await this.router.navigate([`${this.guestBase()}/itinerary-builder`, id], { replaceUrl: true });
+        await this.router.navigate([`${this.guestBase()}/itinerary-builder`, id], {
+          replaceUrl: true,
+        });
       }
     } catch (e) {
       console.error(e);
       this.toastService.error(this.itineraryService.readApiError(e));
+    } finally {
+      this.isSavingDraft = false;
     }
   }
 
   async handleSubmit(): Promise<void> {
+    if (this.isBusy) return;
+
     if (this.days.length < 1) {
       this.toastService.error("Add at least one day before submitting.");
       return;
@@ -305,6 +393,7 @@ export class ItineraryBuilderComponent implements OnInit {
       return;
     }
 
+    this.isSubmitting = true;
     try {
       const payload = this.buildDraftPayload();
       if (!this.itineraryId) {
@@ -314,16 +403,28 @@ export class ItineraryBuilderComponent implements OnInit {
         await this.itineraryService.updateItinerary(this.itineraryId, payload);
       }
 
-      await this.itineraryService.submitItinerary(this.itineraryId!);
-      this.toastService.success("Itinerary submitted.");
+      const wasReturned = canTravelerEditReturned(this.itineraryStatus);
+      if (wasReturned) {
+        await this.itineraryService.resubmitItinerary(this.itineraryId!);
+        this.itineraryStatus = "resubmitted";
+        this.toastService.success("Itinerary resubmitted for review.");
+      } else {
+        await this.itineraryService.submitItinerary(this.itineraryId!);
+        this.itineraryStatus = "submitted";
+        this.toastService.success("Itinerary submitted.");
+      }
       await this.router.navigate([`${this.guestBase()}/dashboard`]);
     } catch (e) {
       console.error(e);
       this.toastService.error(this.itineraryService.readApiError(e));
+    } finally {
+      this.isSubmitting = false;
     }
   }
 
-  initAutocomplete(input: HTMLInputElement, day: DayPlan, index: number) {
+  initAutocomplete(input: HTMLInputElement, day: DayPlan, index: number): void {
+    if (this.isBusy) return;
+
     const autocomplete = new google.maps.places.Autocomplete(input);
 
     autocomplete.addListener("place_changed", async () => {
@@ -340,6 +441,7 @@ export class ItineraryBuilderComponent implements OnInit {
         lng: place.geometry.location.lng(),
       };
 
+      this.isSavingAttraction = true;
       try {
         const attractionId = await this.itineraryService.saveFromGoogle(attraction);
 
@@ -347,9 +449,12 @@ export class ItineraryBuilderComponent implements OnInit {
           ...attraction,
           id: attractionId,
         };
+        this.toastService.success("Attraction added.");
       } catch (error) {
         console.error("Failed to save attraction", error);
         this.toastService.error(this.itineraryService.readApiError(error));
+      } finally {
+        this.isSavingAttraction = false;
       }
     });
   }

@@ -1,0 +1,43 @@
+<div class="booking-cal">
+  <div class="booking-cal__header">
+    <h4 class="booking-cal__title">{{ title }}</h4>
+    <div class="booking-cal__nav">
+      <button type="button" class="booking-cal__nav-btn" (click)="previousMonth()" aria-label="Previous month">‹</button>
+      <span class="booking-cal__month">{{ monthNames[currentMonth] }} {{ currentYear }}</span>
+      <button type="button" class="booking-cal__nav-btn" (click)="nextMonth()" aria-label="Next month">›</button>
+    </div>
+  </div>
+
+  <div class="booking-cal__weekdays">
+    @for (day of dayNames; track day) {
+      <div class="booking-cal__weekday">{{ day }}</div>
+    }
+  </div>
+
+  <div class="booking-cal__grid">
+    @for (cell of calendarCells; track $index) {
+      <div
+        class="booking-cal__cell"
+        [class]="cellClass(cell.status)"
+        [attr.title]="cell.dateKey && cell.status ? cell.dateKey + ': ' + cell.status : null"
+      >
+        {{ cell.day ?? '' }}
+      </div>
+    }
+  </div>
+
+  <div class="booking-cal__legend">
+    <span class="booking-cal__legend-item">
+      <span class="booking-cal__swatch bg-emerald-100 border-emerald-300"></span>
+      Available
+    </span>
+    <span class="booking-cal__legend-item">
+      <span class="booking-cal__swatch bg-rose-200 border-rose-300"></span>
+      Booked
+    </span>
+    <span class="booking-cal__legend-item">
+      <span class="booking-cal__swatch bg-gray-200 border-gray-300"></span>
+      Unavailable
+    </span>
+  </div>
+</div>

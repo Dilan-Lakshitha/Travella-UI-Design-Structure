@@ -1,175 +1,121 @@
 <app-layout title="Staff & Resource Management" role="STAFF">
-      <div class="space-y-6">
-        @if (isLoading) {
-          <app-card>
-            <app-card-content class="pt-6 text-center text-gray-500">
-              Loading drivers and guides...
-            </app-card-content>
-          </app-card>
-        }
-        @if (!isLoading && errorMessage) {
-          <app-card>
-            <app-card-content class="pt-6 text-center text-red-600">
-              {{ errorMessage }}
-            </app-card-content>
-          </app-card>
-        }
-        <app-tabs [value]="activeTab" (valueChange)="activeTab = $event">
-          <app-tabs-list class="grid w-full max-w-md grid-cols-2">
-            <app-tabs-trigger
-              value="drivers"
-              [active]="activeTab === 'drivers'"
-              (tabSelect)="activeTab = $event"
-            >
-              Drivers
-            </app-tabs-trigger>
-            <app-tabs-trigger
-              value="guides"
-              [active]="activeTab === 'guides'"
-              (tabSelect)="activeTab = $event"
-            >
-              Guides
-            </app-tabs-trigger>
-          </app-tabs-list>
+  <div class="space-y-6 staff-resource-page">
+    @if (isLoading) {
+      <app-card>
+        <app-card-content class="pt-6 text-center text-gray-500">
+          Loading drivers and guides...
+        </app-card-content>
+      </app-card>
+    }
+    @if (!isLoading && errorMessage) {
+      <app-card>
+        <app-card-content class="pt-6 text-center text-red-600">
+          {{ errorMessage }}
+        </app-card-content>
+      </app-card>
+    }
 
-          <!-- Drivers Tab -->
-          <app-tabs-content value="drivers" [active]="activeTab === 'drivers'" class="space-y-4">
-            <div class="flex justify-between items-center">
-              <h3 class="text-lg font-semibold">Driver List</h3>
-            </div>
+    @if (!isLoading && !errorMessage) {
+      <app-tabs [value]="activeTab" (valueChange)="activeTab = $event">
+        <app-tabs-list class="grid w-full max-w-md grid-cols-2">
+          <app-tabs-trigger
+            value="drivers"
+            [active]="activeTab === 'drivers'"
+            (tabSelect)="activeTab = $event"
+          >
+            Drivers
+          </app-tabs-trigger>
+          <app-tabs-trigger
+            value="guides"
+            [active]="activeTab === 'guides'"
+            (tabSelect)="activeTab = $event"
+          >
+            Guides
+          </app-tabs-trigger>
+        </app-tabs-list>
 
-            <app-card>
-              <app-card-content class="p-0">
+        <app-tabs-content value="drivers" [active]="activeTab === 'drivers'" class="space-y-4">
+          <h3 class="text-lg font-semibold">Driver list</h3>
+          <app-card>
+            <app-card-content class="p-0">
+              <div class="overflow-x-auto px-1 pb-1">
                 <app-table>
                   <app-table-header>
                     <app-table-row>
-                      <app-table-head>Name</app-table-head>
-                      <app-table-head>Experience</app-table-head>
-                      <app-table-head>Phone</app-table-head>
-                      <app-table-head>Availability</app-table-head>
-                      <app-table-head>Actions</app-table-head>
+                      <app-table-head class="min-w-[140px]">Name</app-table-head>
+                      <app-table-head class="min-w-[100px]">Phone</app-table-head>
+                      <app-table-head class="min-w-[100px]">Language</app-table-head>
+                      <app-table-head class="min-w-[90px]">Experience</app-table-head>
+                      <app-table-head class="min-w-[110px]">Availability</app-table-head>
+                      <app-table-head class="min-w-[160px]">Email</app-table-head>
                     </app-table-row>
                   </app-table-header>
                   <app-table-body>
                     @for (driver of drivers; track driver.id) {
                       <app-table-row>
-                        <app-table-cell class="font-medium">
-                          <div class="flex items-center">
-                            <div class="rounded-full bg-blue-100 p-2 mr-3">
-                              <app-icon name="car" [size]="16" class="text-blue-600" />
-                            </div>
-                            {{ driver.name }}
-                          </div>
-                        </app-table-cell>
-                        <app-table-cell>{{ driver.experience || '—' }}</app-table-cell>
+                        <app-table-cell class="font-medium">{{ driver.name }}</app-table-cell>
                         <app-table-cell>{{ driver.phone || '—' }}</app-table-cell>
+                        <app-table-cell>{{ driver.language || '—' }}</app-table-cell>
+                        <app-table-cell>{{ driver.experience ?? '—' }}</app-table-cell>
                         <app-table-cell>
-                          <app-badge class="bg-gray-100 text-gray-800">{{ driver.availability || '—' }}</app-badge>
+                          <app-badge [class]="availabilityBadgeClass(driver.availability)">
+                            {{ driver.availability || 'AVAILABLE' }}
+                          </app-badge>
                         </app-table-cell>
-                        <app-table-cell>
-                          <button
-                            class="btn btn-outline btn-sm"
-                            (click)="openCalendarDialog(driver.name)"
-                          >
-                            <app-icon name="calendar" [size]="16" class="mr-2" />
-                            View Availability
-                          </button>
-                        </app-table-cell>
+                        <app-table-cell class="text-sm">{{ driver.email || '—' }}</app-table-cell>
                       </app-table-row>
                     }
                   </app-table-body>
                 </app-table>
-              </app-card-content>
-            </app-card>
-          </app-tabs-content>
+              </div>
+            </app-card-content>
+          </app-card>
+        </app-tabs-content>
 
-          <!-- Guides Tab -->
-          <app-tabs-content value="guides" [active]="activeTab === 'guides'" class="space-y-4">
-            <div class="flex justify-between items-center">
-              <h3 class="text-lg font-semibold">Guide List</h3>
-            </div>
-
-            <app-card>
-              <app-card-content class="p-0">
+        <app-tabs-content value="guides" [active]="activeTab === 'guides'" class="space-y-4">
+          <h3 class="text-lg font-semibold">Guide list</h3>
+          <app-card>
+            <app-card-content class="p-0">
+              <div class="overflow-x-auto px-1 pb-1">
                 <app-table>
                   <app-table-header>
                     <app-table-row>
-                      <app-table-head>Name</app-table-head>
-                      <app-table-head>Languages</app-table-head>
-                      <app-table-head>Experience</app-table-head>
-                      <app-table-head>Phone</app-table-head>
-                      <app-table-head>Availability</app-table-head>
-                      <app-table-head>Actions</app-table-head>
+                      <app-table-head class="min-w-[140px]">Name</app-table-head>
+                      <app-table-head class="min-w-[100px]">Phone</app-table-head>
+                      <app-table-head class="min-w-[100px]">Language</app-table-head>
+                      <app-table-head class="min-w-[90px]">Experience</app-table-head>
+                      <app-table-head class="min-w-[110px]">Availability</app-table-head>
+                      <app-table-head class="min-w-[160px]">Email</app-table-head>
                     </app-table-row>
                   </app-table-header>
                   <app-table-body>
                     @for (guide of guides; track guide.id) {
                       <app-table-row>
-                        <app-table-cell class="font-medium">
-                          <div class="flex items-center">
-                            <div class="rounded-full bg-purple-100 p-2 mr-3">
-                              <app-icon name="user" [size]="16" class="text-purple-600" />
-                            </div>
-                            {{ guide.name }}
-                          </div>
-                        </app-table-cell>
-                        <app-table-cell>{{ guide.languages || '—' }}</app-table-cell>
-                        <app-table-cell>{{ guide.experience || '—' }}</app-table-cell>
+                        <app-table-cell class="font-medium">{{ guide.name }}</app-table-cell>
                         <app-table-cell>{{ guide.phone || '—' }}</app-table-cell>
+                        <app-table-cell>{{ guide.language || guide.languages || '—' }}</app-table-cell>
+                        <app-table-cell>{{ guide.experience ?? '—' }}</app-table-cell>
                         <app-table-cell>
-                          <app-badge class="bg-gray-100 text-gray-800">{{ guide.availability || '—' }}</app-badge>
+                          <app-badge [class]="availabilityBadgeClass(guide.availability)">
+                            {{ guide.availability || 'AVAILABLE' }}
+                          </app-badge>
                         </app-table-cell>
-                        <app-table-cell>
-                          <button
-                            class="btn btn-outline btn-sm"
-                            (click)="openCalendarDialog(guide.name)"
-                          >
-                            <app-icon name="calendar" [size]="16" class="mr-2" />
-                            View Availability
-                          </button>
-                        </app-table-cell>
+                        <app-table-cell class="text-sm">{{ guide.email || '—' }}</app-table-cell>
                       </app-table-row>
                     }
                   </app-table-body>
                 </app-table>
-              </app-card-content>
-            </app-card>
-          </app-tabs-content>
-        </app-tabs>
-      </div>
+              </div>
+            </app-card-content>
+          </app-card>
+        </app-tabs-content>
+      </app-tabs>
 
-      <!-- Calendar Dialog -->
-      <app-dialog
-        [open]="isCalendarDialogOpen"
-        (openChange)="isCalendarDialogOpen = $event"
-        size="lg"
-      >
-        <app-dialog-header>
-          <app-dialog-title>{{ selectedStaffName }} - Availability Calendar</app-dialog-title>
-        </app-dialog-header>
-        <div class="py-4">
-          <app-calendar
-            [selected]="selectedDate"
-            (selectedChange)="selectedDate = $event"
-            class="rounded-md border"
-          />
-          <div class="mt-4 space-y-2">
-            <h4 class="font-semibold">Legend:</h4>
-            <div class="flex flex-wrap gap-4">
-              <div class="flex items-center">
-                <div class="w-4 h-4 bg-green-200 rounded mr-2"></div>
-                <span class="text-sm">Available</span>
-              </div>
-              <div class="flex items-center">
-                <div class="w-4 h-4 bg-red-200 rounded mr-2"></div>
-                <span class="text-sm">Booked</span>
-              </div>
-              <div class="flex items-center">
-                <div class="w-4 h-4 bg-gray-200 rounded mr-2"></div>
-                <span class="text-sm">Unavailable</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </app-dialog>
-    </app-layout>
+      @if (activeTab === 'drivers') {
+        <app-admin-booking-calendar initialView="driver" [staffMode]="true" />
+      } @else {
+        <app-admin-booking-calendar initialView="guide" [staffMode]="true" />
+      }
+    }
+  </div>
+</app-layout>

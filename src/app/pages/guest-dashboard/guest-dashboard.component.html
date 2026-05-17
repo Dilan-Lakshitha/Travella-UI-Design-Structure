@@ -1,185 +1,150 @@
     <app-layout title="My Travel Plans" role="TRAVELER">
       <div class="space-y-6">
-        @if (isLoading) {
-          <app-card>
-            <app-card-content class="pt-6 text-center text-gray-500">
-              Loading your itineraries...
-            </app-card-content>
-          </app-card>
-        }
-        @if (!isLoading && errorMessage) {
-          <app-card>
-            <app-card-content class="pt-6 text-center text-red-600">
-              {{ errorMessage }}
-            </app-card-content>
-          </app-card>
-        }
-        <!-- Action Button -->
-        <div class="flex justify-between items-center">
-          <p class="text-gray-600">Plan your dream vacation with personalized itineraries</p>
-          <button class="btn btn-primary" (click)="navigateToBuilder()">
+        <div class="flex flex-wrap justify-between items-center gap-3">
+          <p class="text-gray-600">Plan and track your personalized itineraries</p>
+          <button type="button" class="btn btn-primary" (click)="navigateToBuilder()">
             <app-icon name="plus" [size]="16" class="mr-2" />
             Customize Your Tour
           </button>
         </div>
 
-        <!-- Draft Itineraries -->
-        <div>
-          <h3 class="text-lg font-semibold mb-4">Draft Itineraries</h3>
-          @if (draftItineraries.length === 0) {
-            <app-card>
-              <app-card-content class="pt-6 text-center text-gray-500">
-                No draft itineraries. Start planning your next adventure!
-              </app-card-content>
-            </app-card>
-          } @else {
-            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              @for (itinerary of draftItineraries; track itinerary.id) {
-                <app-itinerary-card
-                  [item]="itinerary"
-                  [statusLabel]="formatStatus(itinerary.status)"
-                  [statusClass]="getStatusColor(itinerary.status)"
-                >
-                  <div class="flex space-x-2">
-                    <button class="btn btn-primary btn-sm flex-1" (click)="navigateToEditItinerary(itinerary.id)">Continue Editing</button>
-                    <button class="btn btn-outline btn-sm flex-1" [disabled]="busyItineraryIds.has(itinerary.id)" (click)="submitItinerary(itinerary.id, $event)">
+        @if (returnedCount > 0 || submittedCount > 0 || approvedCount > 0) {
+          <div class="grid gap-3 md:grid-cols-3">
+            @if (returnedCount > 0) {
+              <div class="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-900">
+                <strong>{{ returnedCount }}</strong> itinerary{{ returnedCount === 1 ? '' : 's' }} need your attention.
+              </div>
+            }
+            @if (submittedCount > 0) {
+              <div class="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                <strong>{{ submittedCount }}</strong> submitted for agency review.
+              </div>
+            }
+            @if (approvedCount > 0) {
+              <div class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-900">
+                <strong>{{ approvedCount }}</strong> approved or in final processing.
+              </div>
+            }
+          </div>
+        }
+
+        <div class="flex flex-wrap gap-2 border-b border-gray-200 pb-2">
+          @for (tab of tabs; track tab.id) {
+            <button
+              type="button"
+              class="px-3 py-2 text-sm rounded-md transition-colors"
+              [class.bg-blue-600]="activeTab === tab.id"
+              [class.text-white]="activeTab === tab.id"
+              [class.text-gray-700]="activeTab !== tab.id"
+              [class.hover:bg-gray-100]="activeTab !== tab.id"
+              (click)="selectTab(tab.id)"
+            >
+              {{ tab.label }}
+            </button>
+          }
+        </div>
+
+        @if (isLoading) {
+          <app-card>
+            <app-card-content class="pt-6 text-center text-gray-500">Loading your itineraries...</app-card-content>
+          </app-card>
+        }
+
+        @if (!isLoading && errorMessage) {
+          <app-card>
+            <app-card-content class="pt-6 text-center text-red-600">{{ errorMessage }}</app-card-content>
+          </app-card>
+        }
+
+        @if (!isLoading && !errorMessage && itemsForActiveTab().length === 0) {
+          <app-card>
+            <app-card-content class="pt-6 text-center text-gray-500">
+              No itineraries in this section.
+            </app-card-content>
+          </app-card>
+        }
+
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          @if (!isLoading && !errorMessage) {
+            @for (itinerary of itemsForActiveTab(); track itinerary.id) {
+              <app-itinerary-card
+                [item]="itinerary"
+                [statusLabel]="statusLabel(normalizeStatus(itinerary))"
+                [statusClass]="statusClass(normalizeStatus(itinerary))"
+              >
+                @if (notificationText(itinerary); as note) {
+                  <div
+                    class="text-xs rounded-md px-2 py-1"
+                    [class.bg-orange-100]="normalizeStatus(itinerary) === 'returned_for_correction'"
+                    [class.text-orange-900]="normalizeStatus(itinerary) === 'returned_for_correction'"
+                    [class.bg-amber-100]="normalizeStatus(itinerary) === 'resubmitted'"
+                    [class.text-amber-900]="normalizeStatus(itinerary) === 'resubmitted'"
+                    [class.bg-green-100]="normalizeStatus(itinerary) === 'approved_by_admin' || normalizeStatus(itinerary) === 'confirmed'"
+                    [class.text-green-900]="normalizeStatus(itinerary) === 'approved_by_admin' || normalizeStatus(itinerary) === 'confirmed'"
+                    [class.bg-red-100]="normalizeStatus(itinerary) === 'rejected'"
+                    [class.text-red-900]="normalizeStatus(itinerary) === 'rejected'"
+                    [class.bg-blue-100]="normalizeStatus(itinerary) === 'under_review' || normalizeStatus(itinerary) === 'submitted'"
+                    [class.text-blue-900]="normalizeStatus(itinerary) === 'under_review' || normalizeStatus(itinerary) === 'submitted'"
+                  >
+                    {{ note }}
+                  </div>
+                }
+
+                <div class="flex flex-wrap gap-2">
+                  @if (activeTab === 'draft') {
+                    <button type="button" class="btn btn-primary btn-sm flex-1" (click)="navigateToEditItinerary(itinerary.id)">
+                      Continue Editing
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-outline btn-sm flex-1"
+                      [disabled]="busyItineraryIds.has(itinerary.id)"
+                      (click)="submitItinerary(itinerary.id, $event)"
+                    >
                       @if (busyItineraryIds.has(itinerary.id)) { Submitting... } @else { Submit }
                     </button>
-                  </div>
-                  <button class="btn btn-destructive btn-sm w-full" [disabled]="busyItineraryIds.has(itinerary.id)" (click)="deleteDraft(itinerary.id, $event)">
-                    Delete Draft
-                  </button>
-                </app-itinerary-card>
-              }
-            </div>
-          }
-        </div>
-
-        <!-- Submitted Itineraries -->
-        <div>
-          <h3 class="text-lg font-semibold mb-4">Submitted for Review</h3>
-          @if (submittedItineraries.length === 0) {
-            <app-card>
-              <app-card-content class="pt-6 text-center text-gray-500">
-                No submitted itineraries
-              </app-card-content>
-            </app-card>
-          } @else {
-            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              @for (itinerary of submittedItineraries; track itinerary.id) {
-                <app-card class="hover:shadow-lg transition-shadow">
-                  <app-card-header>
-                    <div class="flex justify-between items-start">
-                      <app-card-title class="text-lg">{{ itinerary.tripName }}</app-card-title>
-                      <app-badge [class]="getStatusColor(itinerary.status)">
-                        {{ formatStatus(itinerary.status) }}
-                      </app-badge>
-                    </div>
-                    <app-card-description class="flex items-center">
-                      <app-icon name="map-pin" [size]="12" class="mr-1" />
-                      {{ itinerary.destination }}
-                    </app-card-description>
-                  </app-card-header>
-                  <app-card-content class="space-y-3">
-                    <div class="flex items-center text-sm text-gray-600">
-                      <app-icon name="calendar" [size]="16" class="mr-2" />
-                      {{ formatDate(itinerary.startDate) }} - {{ formatDate(itinerary.endDate) }}
-                    </div>
-                    <div class="text-sm text-blue-600">
-                      Under review by our travel experts
-                    </div>
-                  </app-card-content>
-                </app-card>
-              }
-            </div>
-          }
-        </div>
-
-        <!-- Returned for Correction -->
-        <div>
-          <h3 class="text-lg font-semibold mb-4">Returned for Correction / Resubmitted</h3>
-          @if (correctedItineraries.length === 0) {
-            <app-card>
-              <app-card-content class="pt-6 text-center text-gray-500">
-                No correction requests at the moment
-              </app-card-content>
-            </app-card>
-          } @else {
-            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              @for (itinerary of correctedItineraries; track itinerary.id) {
-                <app-itinerary-card
-                  [item]="itinerary"
-                  [statusLabel]="formatStatus(itinerary.status)"
-                  [statusClass]="getStatusColor(itinerary.status)"
-                >
-                  <div class="text-sm" [class]="itinerary.status === 'resubmitted' ? 'text-orange-600' : 'text-red-600'">
-                    @if (itinerary.status === 'returned_for_correction') {
-                      Returned with requested changes. Update and resubmit.
-                    } @else {
-                      Resubmitted and waiting for review.
-                    }
-                  </div>
-                  <div class="flex gap-2">
-                    @if (itinerary.status === 'returned_for_correction') {
-                      <button class="btn btn-primary btn-sm flex-1" (click)="navigateToEditItinerary(itinerary.id)">Edit Itinerary</button>
-                    }
-                    <button class="btn btn-outline btn-sm flex-1" (click)="openConversation(itinerary.id)">View Conversation</button>
-                  </div>
-                </app-itinerary-card>
-              }
-            </div>
-          }
-        </div>
-
-        <!-- Approved Itineraries -->
-        <div>
-          <h3 class="text-lg font-semibold mb-4">Approved Itineraries</h3>
-          @if (approvedItineraries.length === 0) {
-            <app-card>
-              <app-card-content class="pt-6 text-center text-gray-500">
-                No approved itineraries yet
-              </app-card-content>
-            </app-card>
-          } @else {
-            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              @for (itinerary of approvedItineraries; track itinerary.id) {
-                <app-card class="hover:shadow-lg transition-shadow cursor-pointer border-green-200">
-                  <app-card-header>
-                    <div class="flex justify-between items-start">
-                      <app-card-title class="text-lg">{{ itinerary.tripName }}</app-card-title>
-                      <app-badge [class]="getStatusColor(itinerary.status)">
-                        {{ formatStatus(itinerary.status) }}
-                      </app-badge>
-                    </div>
-                    <app-card-description class="flex items-center">
-                      <app-icon name="map-pin" [size]="12" class="mr-1" />
-                      {{ itinerary.destination }}
-                    </app-card-description>
-                  </app-card-header>
-                  <app-card-content class="space-y-3">
-                    <div class="flex items-center text-sm text-gray-600">
-                      <app-icon name="calendar" [size]="16" class="mr-2" />
-                      {{ formatDate(itinerary.startDate) }} - {{ formatDate(itinerary.endDate) }}
-                    </div>
                     <button
-                      class="btn btn-primary btn-sm w-full"
-                      (click)="navigateToBooking(itinerary.id)"
+                      type="button"
+                      class="btn btn-destructive btn-sm w-full"
+                      [disabled]="busyItineraryIds.has(itinerary.id)"
+                      (click)="deleteDraft(itinerary.id, $event)"
                     >
+                      Delete Draft
+                    </button>
+                  }
+
+                  @if (canEditReturned(itinerary)) {
+                    <button type="button" class="btn btn-primary btn-sm flex-1" (click)="navigateToEditItinerary(itinerary.id)">
+                      Edit Itinerary
+                    </button>
+                  }
+
+                  @if (canViewConversation(itinerary)) {
+                    <button type="button" class="btn btn-outline btn-sm flex-1" (click)="openConversation(itinerary.id)">
+                      View Conversation
+                    </button>
+                  }
+
+                  @if (isReadOnlyFinal(itinerary) || activeTab === 'approved') {
+                    <button type="button" class="btn btn-primary btn-sm w-full" (click)="navigateToBooking(itinerary.id)">
                       View Details
                     </button>
-                  </app-card-content>
-                </app-card>
-              }
-            </div>
+                  }
+                </div>
+              </app-itinerary-card>
+            }
           }
         </div>
       </div>
+
       <app-conversation-modal
         [open]="conversationOpen"
-        [messages]="messages"
+        [itineraryId]="conversationItineraryId"
         [currentRole]="'TRAVELER'"
+        [currentUserId]="currentUserId()"
         [title]="'Itinerary Conversation'"
         (openChange)="conversationOpen = $event"
-        (send)="sendConversationMessage($event)"
       />
     </app-layout>
+
+
