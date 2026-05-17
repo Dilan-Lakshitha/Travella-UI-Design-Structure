@@ -107,11 +107,11 @@ export class ItineraryBuilderComponent implements OnInit {
 
   accommodationOptions = [
     { value: null, label: "No Accommodation" },
-    { value: "Hotel", label: "Hotel" },
-    { value: "Resort", label: "Resort" },
-    { value: "Hostel", label: "Hostel" },
-    { value: "Villa", label: "Villa" },
-    { value: "Apartment", label: "Apartment" },
+    { value: "hotel", label: "Hotel" },
+    { value: "resort", label: "Resort" },
+    { value: "hostel", label: "Hostel" },
+    { value: "villa", label: "Villa" },
+    { value: "apartment", label: "Apartment" },
   ];
 
   get isBusy(): boolean {
