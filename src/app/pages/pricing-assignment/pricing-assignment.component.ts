@@ -71,7 +71,7 @@ export class PricingAssignmentComponent implements OnInit {
   }
 
   get canEditPricing(): boolean {
-    return ['under_review', 'priced'].includes(this.rawStatus);
+    return ['under_review', 'resubmitted',  'priced'].includes(this.rawStatus);
   }
 
   get canSendToOwner(): boolean {

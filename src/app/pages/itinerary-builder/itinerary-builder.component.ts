@@ -91,14 +91,14 @@ export class ItineraryBuilderComponent implements OnInit {
           id: null,
         },
       ],
-      mealPlan: "BB",
-      accommodation: "",
+      mealPlan: null,
+      accommodation: null,
       expanded: true,
     },
   ];
 
   mealPlanOptions = [
-    { value: null, label: "No Meal Plan" },
+    { value: '', label: "No Meal Plan" },
     { value: "BB", label: "Bed & Breakfast (BB)" },
     { value: "HB", label: "Half Board (HB)" },
     { value: "FB", label: "Full Board (FB)" },
@@ -106,7 +106,7 @@ export class ItineraryBuilderComponent implements OnInit {
   ];
 
   accommodationOptions = [
-    { value: null, label: "No Accommodation" },
+    { value: '', label: "No Accommodation" },
     { value: "hotel", label: "Hotel" },
     { value: "resort", label: "Resort" },
     { value: "hostel", label: "Hostel" },
@@ -234,6 +234,7 @@ export class ItineraryBuilderComponent implements OnInit {
         this.accommodationOptions.some((o) => o.value === acc.accommodationName) ? acc.accommodationName! : (acc?.accommodationName?.toLowerCase() ?? "");
 
         console.log('accomdation',accommodationValue);
+        console.log('meals plan',(acc?.mealPlanCode || "BB").toUpperCase(),);
       return {
         id: idx + 1,
         dayNumber: d.dayNumber,
@@ -256,7 +257,7 @@ export class ItineraryBuilderComponent implements OnInit {
                 id: null,
               },
             ],
-        mealPlan: (acc?.mealPlanCode || "BB").substring(0, 2).toUpperCase(),
+        mealPlan: (acc?.mealPlanCode || "BB"),
         accommodation: accommodationValue,
         expanded: idx === 0,
       };
