@@ -216,4 +216,5 @@ export class GuestDashboardComponent implements OnInit {
   currentUserId(): number | null {
     return this.authService.getUser()?.userId ?? null;
   }
+
 }

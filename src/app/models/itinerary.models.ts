@@ -244,3 +244,10 @@ export interface AssignReviewerResult {
   isCurrentUserReviewer: boolean;
   reviewerAssignedByThisRequest: boolean;
 }
+
+export interface ChatTypingUser {
+  itineraryId: number;
+  senderId: number;
+  senderName: string;
+  senderRole: string;
+}

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
 import { API_BASE_URL } from '../config/api.config';
 import { AuthService } from './auth.service';
-import type { ItineraryMessage } from '../models/itinerary.models';
+import type { ChatTypingUser, ItineraryMessage } from '../models/itinerary.models';
 
 @Injectable({ providedIn: 'root' })
 export class ItineraryChatService {
@@ -10,7 +10,9 @@ export class ItineraryChatService {
   private connection: signalR.HubConnection | null = null;
   private activeItineraryId: number | null = null;
 
-  async connect(itineraryId: number, onMessage: (msg: ItineraryMessage) => void): Promise<void> {
+  async connect(itineraryId: number, onMessage: (msg: ItineraryMessage) => void,    
+  onTyping: (user: ChatTypingUser) => void,
+    onStoppedTyping: (user: ChatTypingUser) => void): Promise<void> {
     await this.disconnect();
 
     const token = this.auth.getToken();
@@ -40,8 +42,41 @@ export class ItineraryChatService {
       });
     });
 
+    this.connection.on('UserTyping', (payload: ChatTypingUser) => {
+      onTyping(payload);
+    });
+
+    this.connection.on('UserStoppedTyping', (payload: ChatTypingUser) => {
+      onStoppedTyping(payload);
+    });
+
     await this.connection.start();
     await this.connection.invoke('JoinItineraryChat', itineraryId);
+  }
+
+    async notifyTyping(
+    itineraryId: number,
+    senderId: number,
+    senderRole: string
+  ): Promise<void> {
+    console.log('Notifying typing:', { itineraryId, senderId, senderRole });
+    if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) {
+      return;
+    }
+
+    await this.connection.invoke('NotifyTyping', itineraryId, senderId, senderRole);
+  }
+
+  async notifyStoppedTyping(
+    itineraryId: number,
+    senderId: number
+  ): Promise<void> {
+    console.log('Notifying stopped typing:', { itineraryId, senderId});
+    if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) {
+      return;
+    }
+
+    await this.connection.invoke('NotifyStoppedTyping', itineraryId, senderId);
   }
 
   async disconnect(): Promise<void> {
@@ -55,7 +90,7 @@ export class ItineraryChatService {
       }
       await this.connection.stop();
     } catch {
-      // ignore teardown errors
+      // Ignore errors during disconnect
     } finally {
       this.connection = null;
       this.activeItineraryId = null;

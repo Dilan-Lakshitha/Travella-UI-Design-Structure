@@ -19,10 +19,11 @@ import {
   DialogHeaderComponent,
   DialogTitleComponent,
 } from '../ui/dialog.component';
-import type { ItineraryConversation, ItineraryMessage } from '../../models/itinerary.models';
+import type { ChatTypingUser, ItineraryConversation, ItineraryMessage } from '../../models/itinerary.models';
 import { ItineraryChatService } from '../../services/itinerary-chat.service';
 import { ItineraryService } from '../../services/itinerary.service';
 import { ToastService } from '../../services/toast.service';
+import { AuthService } from '@app/services/auth.service';
 
 @Component({
   selector: 'app-conversation-modal',
@@ -36,72 +37,8 @@ import { ToastService } from '../../services/toast.service';
     DialogDescriptionComponent,
     DialogFooterComponent,
   ],
-  template: `
-    <app-dialog [open]="open" (openChange)="onOpenChange($event)" size="lg">
-      <app-dialog-header>
-        <app-dialog-title>{{ title }}</app-dialog-title>
-        <app-dialog-description>
-          @if (canSendMessage) {
-            Reply in the itinerary conversation thread
-          } @else if (canViewConversation) {
-            Read-only conversation history
-          } @else {
-            Conversation unavailable
-          }
-        </app-dialog-description>
-      </app-dialog-header>
-
-      @if (loading) {
-        <div class="py-8 text-center text-gray-500 text-sm">Loading conversation...</div>
-      } @else if (loadError) {
-        <div class="py-8 text-center text-red-600 text-sm">{{ loadError }}</div>
-      } @else {
-        <div #scrollHost class="h-80 overflow-y-auto border rounded-md p-3 space-y-2 bg-gray-50">
-          @if (messages.length === 0) {
-            <p class="text-sm text-gray-500 text-center py-6">No messages yet.</p>
-          }
-          @for (msg of messages; track msg.id) {
-            <div [class]="bubbleClass(msg)">
-              <div class="text-[11px] opacity-70 mb-1">
-                {{ msg.senderName || msg.senderRole }} · {{ msg.senderRole }} · {{ msg.createdAt | date:'short' }}
-              </div>
-              <div class="text-sm whitespace-pre-wrap">{{ msg.message }}</div>
-            </div>
-          }
-        </div>
-
-        @if (canSendMessage) {
-          <div class="mt-3">
-            <textarea
-              class="w-full border rounded-md p-2 text-sm"
-              rows="3"
-              [(ngModel)]="draftMessage"
-              placeholder="Type a message..."
-              [disabled]="sending"
-            ></textarea>
-          </div>
-        } @else if (canViewConversation) {
-          <p class="mt-3 text-sm text-gray-500">
-            {{ readOnlyHint || 'This conversation is read-only for your account.' }}
-          </p>
-        }
-      }
-
-      <app-dialog-footer>
-        <button class="btn btn-outline" type="button" (click)="onOpenChange(false)">Close</button>
-        @if (canSendMessage) {
-          <button
-            class="btn btn-primary"
-            type="button"
-            [disabled]="sending || !draftMessage.trim()"
-            (click)="sendMessage()"
-          >
-            @if (sending) { Sending... } @else { Send }
-          </button>
-        }
-      </app-dialog-footer>
-    </app-dialog>
-  `,
+  templateUrl: './conversation-modal.component.html',
+  styleUrl: './conversation-modal.component.scss'
 })
 export class ConversationModalComponent implements OnChanges, OnDestroy {
   @Input() open = false;
@@ -117,7 +54,11 @@ export class ConversationModalComponent implements OnChanges, OnDestroy {
   private chatService = inject(ItineraryChatService);
   private itineraryService = inject(ItineraryService);
   private toastService = inject(ToastService);
+  private auth = inject(AuthService);
+  private typingTimeout?: any;
+  private isTypingSent = false;
 
+  typingUsers: ChatTypingUser[] = [];
   messages: ItineraryMessage[] = [];
   loading = false;
   loadError = '';
@@ -142,17 +83,52 @@ export class ConversationModalComponent implements OnChanges, OnDestroy {
 
   async onOpenChange(value: boolean): Promise<void> {
     if (!value) {
+      await this.stopTyping();
+      this.typingUsers = [];
       await this.chatService.disconnect();
       this.loadError = '';
     }
     this.openChange.emit(value);
   }
 
+  onTyping() {
+    if (!this.itineraryId || !this.currentUserId) return;
+
+    if (!this.isTypingSent) {
+      this.isTypingSent = true;
+      void this.chatService.notifyTyping(
+        this.itineraryId,
+        this.currentUserId,
+        this.currentRole
+      );
+    }
+
+    clearTimeout(this.typingTimeout);
+    // this.typingTimeout = setTimeout(() => {
+    //   void this.stopTyping();
+    // }, 1200);
+  }
+
+  async stopTyping() {
+    if (!this.isTypingSent || !this.itineraryId || !this.currentUserId) return;
+    
+    this.isTypingSent = false;
+    clearTimeout(this.typingTimeout);
+    this.typingTimeout = undefined;
+    
+    await this.chatService.notifyStoppedTyping(
+      this.itineraryId,
+      this.currentUserId
+    );
+  }
+
   private async loadConversation(): Promise<void> {
     if (!this.open || !this.itineraryId) return;
 
-    this.loading = true;
-    this.loadError = '';
+    this.typingUsers = [];
+    this.isTypingSent = false;
+    clearTimeout(this.typingTimeout);
+    this.typingTimeout = undefined;
     try {
       const conversation: ItineraryConversation = await this.itineraryService.getConversation(this.itineraryId);
       this.canViewConversation = conversation.canViewConversation;
@@ -171,12 +147,24 @@ export class ConversationModalComponent implements OnChanges, OnDestroy {
           : 'This conversation is read-only for your account.';
       }
 
-      await this.chatService.connect(this.itineraryId, (msg) => {
-        if (msg.type === 'INTERNAL_NOTE') return;
-        if (this.messages.some((m) => m.id === msg.id && msg.id > 0)) return;
-        this.messages = [...this.messages, msg];
-        this.scrollToBottom();
-      });
+      await this.chatService.connect(
+        this.itineraryId,
+        (msg) => {
+          if (msg.type === 'INTERNAL_NOTE') return;
+          if (this.messages.some((m) => m.id === msg.id && msg.id > 0)) return;
+          this.messages = [...this.messages, msg];
+          this.scrollToBottom();
+        },
+        (user) => {
+          if (user.senderId === this.currentUserId) return;
+          if (!this.typingUsers.some(x => x.senderId === user.senderId)) {
+            this.typingUsers = [...this.typingUsers, user];
+          }
+        },
+        (user) => {
+          this.typingUsers = this.typingUsers.filter(x => x.senderId !== user.senderId);
+        }
+      );
 
       this.scrollToBottom();
     } catch (e) {
@@ -200,6 +188,8 @@ export class ConversationModalComponent implements OnChanges, OnDestroy {
     if (!this.itineraryId || !this.canSendMessage) return;
     const value = this.draftMessage.trim();
     if (!value) return;
+
+    await this.stopTyping();
 
     this.sending = true;
     try {
