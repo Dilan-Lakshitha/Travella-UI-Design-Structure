@@ -1,217 +1,223 @@
-<div class="min-h-screen bg-gradient-to-br from-sky-50 via-white to-violet-50 relative overflow-hidden">
+<div class="min-h-screen bg-gradient-to-br from-sky-50 via-white to-violet-50 overflow-hidden">
+  <div class="grid min-h-screen lg:grid-cols-2">
 
-  <div class="absolute top-0 left-0 h-80 w-80 rounded-full bg-sky-200/35 blur-3xl"></div>
-  <div class="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-violet-200/35 blur-3xl"></div>
+    <!-- LEFT SIDE -->
+    <div class="hidden lg:flex flex-col justify-center px-12 xl:px-20 relative">
+      <div class="absolute top-12 left-12 h-72 w-72 rounded-full bg-sky-200/30 blur-3xl"></div>
+      <div class="absolute bottom-12 right-12 h-72 w-72 rounded-full bg-violet-200/30 blur-3xl"></div>
 
-  <div class="relative z-10 flex min-h-screen items-center justify-center px-4 py-6">
-    <div class="w-full max-w-5xl grid lg:grid-cols-5 gap-6 items-center scale-[0.92]">
+      <div class="relative z-10 max-w-xl">
+        <div class="flex items-center gap-4 mb-8">
+          <div class="flex h-14 w-14 items-center justify-center rounded-3xl bg-gradient-to-r from-sky-500 to-violet-500 shadow-lg">
+            <lucide-icon [img]="Plane" class="h-7 w-7 text-white"></lucide-icon>
+          </div>
 
-      <div class="lg:col-span-2 space-y-6">
-
-        <div class="inline-flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-2 shadow-sm">
-          <span class="text-lg">✈️</span>
-          <span class="text-sm tracking-wide text-slate-600">
-            Travella Registration
-          </span>
+          <div>
+            <h1 class="text-4xl xl:text-5xl font-bold text-slate-800">Travella</h1>
+            <p class="text-slate-500 text-base xl:text-lg">Smart Travel Management Platform</p>
+          </div>
         </div>
 
-        <div class="space-y-3">
-          <h1 class="text-4xl xl:text-5xl font-bold leading-tight text-slate-800">
-            Begin your next
-            <span class="text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-violet-500">
-              adventure
-            </span>
-          </h1>
+        <p class="max-w-lg text-base leading-7 text-slate-600">
+          Create your account and manage travel itineraries, approvals, accommodations, and real-time updates in one place.
+        </p>
 
-          <p class="text-base text-slate-500 max-w-md leading-relaxed">
-            Create your Travella account and manage travel itineraries,
-            accommodations, approvals, and smart trip planning in one place.
-          </p>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4 max-w-xl">
-
-          <div class="rounded-2xl bg-white p-4 shadow-md border border-slate-100 hover:-translate-y-1 transition">
-            <div class="text-2xl mb-2">🧳</div>
-            <h3 class="font-semibold text-slate-800 text-sm">
-              Trip Planning
-            </h3>
-            <p class="text-xs text-slate-500 mt-1">
-              Manage all journeys easily.
-            </p>
+        <div class="mt-10 space-y-4">
+          <div class="flex items-start gap-4 rounded-3xl bg-white/80 p-4 shadow-sm border border-slate-100">
+            <div class="bg-sky-50 rounded-2xl p-3">
+              <lucide-icon [img]="Briefcase" class="h-5 w-5 text-sky-500"></lucide-icon>
+            </div>
+            <div>
+              <h3 class="font-semibold text-slate-800">Manage Trips Easily</h3>
+              <p class="text-sm text-slate-500">Create itineraries, accommodations, and approvals in one place.</p>
+            </div>
           </div>
 
-          <div class="rounded-2xl bg-white p-4 shadow-md border border-slate-100 hover:-translate-y-1 transition">
-            <div class="text-2xl mb-2">🏨</div>
-            <h3 class="font-semibold text-slate-800 text-sm">
-              Accommodation
-            </h3>
-            <p class="text-xs text-slate-500 mt-1">
-              Hotels & meals organized.
-            </p>
+          <div class="flex items-start gap-4 rounded-3xl bg-white/80 p-4 shadow-sm border border-slate-100">
+            <div class="bg-violet-50 rounded-2xl p-3">
+              <lucide-icon [img]="Hotel" class="h-5 w-5 text-violet-500"></lucide-icon>
+            </div>
+            <div>
+              <h3 class="font-semibold text-slate-800">Accommodation & Meals</h3>
+              <p class="text-sm text-slate-500">Hotels, meal plans, and trip stays organized neatly.</p>
+            </div>
           </div>
 
-          <div class="rounded-2xl bg-white p-4 shadow-md border border-slate-100 hover:-translate-y-1 transition">
-            <div class="text-2xl mb-2">📩</div>
-            <h3 class="font-semibold text-slate-800 text-sm">
-              Notifications
-            </h3>
-            <p class="text-xs text-slate-500 mt-1">
-              Instant email updates.
-            </p>
+          <div class="flex items-start gap-4 rounded-3xl bg-white/80 p-4 shadow-sm border border-slate-100">
+            <div class="bg-pink-50 rounded-2xl p-3">
+              <lucide-icon [img]="Bell" class="h-5 w-5 text-pink-500"></lucide-icon>
+            </div>
+            <div>
+              <h3 class="font-semibold text-slate-800">Instant Notifications</h3>
+              <p class="text-sm text-slate-500">Receive approval and update alerts in real time.</p>
+            </div>
           </div>
 
-          <div class="rounded-2xl bg-white p-4 shadow-md border border-slate-100 hover:-translate-y-1 transition">
-            <div class="text-2xl mb-2">🗺️</div>
-            <h3 class="font-semibold text-slate-800 text-sm">
-              Smart Itinerary
-            </h3>
-            <p class="text-xs text-slate-500 mt-1">
-              Build trips efficiently.
-            </p>
+          <div class="flex items-start gap-4 rounded-3xl bg-white/80 p-4 shadow-sm border border-slate-100">
+            <div class="bg-emerald-50 rounded-2xl p-3">
+              <lucide-icon [img]="Map" class="h-5 w-5 text-emerald-500"></lucide-icon>
+            </div>
+            <div>
+              <h3 class="font-semibold text-slate-800">Smart Itinerary</h3>
+              <p class="text-sm text-slate-500">Plan travel day by day with a clean workflow.</p>
+            </div>
           </div>
-
         </div>
       </div>
+    </div>
 
-      <div class="lg:col-span-3">
-        <div class="relative mx-auto max-w-xl rounded-[1.75rem] bg-white/95 border border-white shadow-xl backdrop-blur-xl overflow-hidden">
-
-          <div class="bg-gradient-to-r from-sky-500 to-violet-500 px-6 py-5 text-white">
-            <div class="flex items-center justify-between gap-4">
-              <div>
-                <p class="uppercase tracking-[0.25em] text-[11px] text-white/80">
-                  Create Account
-                </p>
-                <h2 class="text-2xl font-bold mt-1">
-                  Join Travella
-                </h2>
-              </div>
-
-              <div class="bg-white/20 backdrop-blur rounded-2xl px-3 py-2 text-right">
-                <p class="text-[11px] text-white/75">
-                  Travel Status
-                </p>
-                <p class="text-sm font-semibold">
-                  Ready ✈️
-                </p>
-              </div>
+    <!-- RIGHT SIDE -->
+    <div class="flex items-center justify-center px-4 py-8">
+      <div class="w-full max-w-[420px] rounded-[2rem] border border-white bg-white/90 shadow-2xl backdrop-blur-xl">
+        <div class="px-8 pt-8 text-center">
+          <div class="flex justify-center">
+            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-sky-500 to-violet-500 shadow-lg">
+              <lucide-icon [img]="User" class="h-7 w-7 text-white"></lucide-icon>
             </div>
           </div>
 
-          <div class="relative">
-            <div class="absolute top-1/2 left-0 w-full border-t border-dashed border-slate-200"></div>
-            <div class="relative flex justify-between px-5 -mt-3">
-              <div class="w-5 h-5 rounded-full bg-sky-50 border border-slate-200"></div>
-              <div class="w-5 h-5 rounded-full bg-sky-50 border border-slate-200"></div>
+          <h2 class="mt-5 text-3xl font-bold text-slate-800">Create Account</h2>
+          <p class="mt-2 text-sm text-slate-500">Join Travella and get started</p>
+        </div>
+
+        <form (ngSubmit)="register()" class="px-8 pb-8 pt-6 space-y-4">
+          <div>
+            <label class="mb-2 block text-sm font-medium text-slate-700">Full Name</label>
+            <div class="relative">
+              <lucide-icon
+                [img]="User"
+                class="pointer-events-none absolute left-2 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+              ></lucide-icon>
+              <input
+                type="text"
+                placeholder="Enter your name"
+                [(ngModel)]="name"
+                name="name"
+                required
+                class="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-12 pr-4 text-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+              />
             </div>
           </div>
 
+          <div>
+            <label class="mb-2 block text-sm font-medium text-slate-700">Email Address</label>
+            <div class="relative">
+              <lucide-icon
+                [img]="Mail"
+                class="pointer-events-none absolute left-2 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+              ></lucide-icon>
+              <input
+                type="email"
+                placeholder="Enter your email"
+                [(ngModel)]="email"
+                name="email"
+                required
+                class="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-12 pr-4 text-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+              />
+            </div>
+          </div>
 
-          <div class="p-6">
-            <form class="grid gap-4 md:grid-cols-2" (ngSubmit)="register()">
-
-              <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-slate-700 mb-2">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter your name"
-                  [(ngModel)]="name"
-                  name="name"
-                  required
-                  class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                />
-              </div>
-
-              <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-slate-700 mb-2">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  [(ngModel)]="email"
-                  name="email"
-                  required
-                  class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">
-                  Password
-                </label>
+          <div class="grid gap-4 md:grid-cols-2">
+            <div>
+              <label class="mb-2 block text-sm font-medium text-slate-700">Password</label>
+              <div class="relative">
+                <lucide-icon
+                  [img]="Lock"
+                  class="pointer-events-none absolute left-2 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+                ></lucide-icon>
                 <input
                   type="password"
                   placeholder="Create password"
                   [(ngModel)]="password"
                   name="password"
                   required
-                  class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                  class="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-12 pr-4 text-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                 />
               </div>
+            </div>
 
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">
-                  Confirm Password
-                </label>
+            <div>
+              <label class="mb-2 block text-sm font-medium text-slate-700">Confirm Password</label>
+              <div class="relative">
+                <lucide-icon
+                  [img]="Lock"
+                  class="pointer-events-none absolute left-2 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+                ></lucide-icon>
                 <input
                   type="password"
                   placeholder="Confirm password"
                   [(ngModel)]="confirmPassword"
                   name="confirmPassword"
                   required
-                  class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                  class="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-12 pr-4 text-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                 />
               </div>
-
-              <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-slate-700 mb-2">
-                  Phone Number
-                </label>
-                <input
-                  type="text"
-                  placeholder="+94 77 123 4567"
-                  [(ngModel)]="phone"
-                  name="phone"
-                  class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                />
-              </div>
-
-              <div class="md:col-span-2">
-                <p
-                  *ngIf="errorMessage"
-                  class="mb-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-500"
-                >
-                  {{ errorMessage }}
-                </p>
-
-                <button
-                  type="submit"
-                  class="w-full rounded-2xl bg-gradient-to-r from-sky-500 to-violet-500 py-3 text-white font-semibold shadow-lg transition hover:scale-[1.01] hover:shadow-xl"
-                >
-                  Create Account
-                </button>
-              </div>
-
-            </form>
-
-            <div class="mt-5 text-center">
-              <p class="text-slate-500 text-sm">
-
-              </p>
-              <a
-                routerLink="/login"
-                class="inline-flex mt-3 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-2.5 font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
-              >
-                Sign In
-              </a>
             </div>
           </div>
-        </div>
+
+          <div>
+            <label class="mb-2 block text-sm font-medium text-slate-700">Phone Number</label>
+            <div class="relative">
+              <lucide-icon
+                [img]="Phone"
+                class="pointer-events-none absolute left-2 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+              ></lucide-icon>
+              <input
+                type="text"
+                placeholder="+94 77 123 4567"
+                [(ngModel)]="phone"
+                name="phone"
+                class="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-12 pr-4 text-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+              />
+            </div>
+          </div>
+
+          @if (errorMessage) {
+            <div class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+              {{ errorMessage }}
+            </div>
+          }
+
+          @if (successMessage) {
+            <div class="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+              {{ successMessage }}
+            </div>
+          }
+
+          <button
+            type="submit"
+            [disabled]="isLoading"
+            class="w-full rounded-2xl bg-gradient-to-r from-sky-500 to-violet-500 py-3.5 text-sm font-semibold text-white shadow-lg transition hover:scale-[1.01] hover:shadow-xl disabled:opacity-60"
+          >
+            @if (isLoading) {
+              Creating Account...
+            } @else {
+              Create Account
+            }
+          </button>
+
+          <div class="pt-2 text-center">
+            <p class="text-sm text-slate-500">Already have an account?</p>
+            <a
+              [routerLink]="['/company', companySlug, 'login']"
+              class="mt-3 inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+            >
+              Sign In
+            </a>
+          </div>
+
+          <div class="pt-1 text-center">
+            <button
+              type="button"
+              (click)="goToCompanyApplication()"
+              class="inline-flex items-center justify-center rounded-2xl bg-sky-50 px-5 py-2.5 text-sm font-semibold text-sky-700 transition hover:bg-sky-100"
+            >
+              Create Company
+            </button>
+          </div>
+        </form>
       </div>
     </div>
+
   </div>
 </div>

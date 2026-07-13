@@ -20,6 +20,7 @@ interface RegisterTravelerRequest {
   password: string;
   phone?: string;
   companyId: number;
+  companySlug?: string;
 }
 
 interface LoginRequest {
@@ -36,6 +37,19 @@ interface AuthResponse {
   email?: string;
   expiresAtUtc?: string;
   isFirstLogin?: boolean;
+}
+
+interface CompanyApplicationRequest {
+  companyName: string;
+  ownerName: string;
+  email: string;
+  phone: string;
+  companyDescription?: string;
+}
+
+interface CompanyApplicationResponse {
+  applicationId: number;
+  message: string;
 }
 
 @Injectable({
@@ -70,11 +84,12 @@ export class AuthService {
     if (r === 'TRAVELER') return 'TRAVELER';
     if (r === 'STAFF') return 'STAFF';
     if (r === 'ADMIN') return 'ADMIN';
+    if (r === 'SUPER_ADMIN') return 'SUPER_ADMIN';
     return null;
   }
 
-  async login(email: string, password: string, role: UserRole): Promise<boolean> {
-    const payload: LoginRequest = { email, password, role };
+  async login(email: string, password: string): Promise<boolean> {
+    const payload: LoginRequest = { email, password };
 
     try {
       const response = await firstValueFrom(
@@ -82,12 +97,11 @@ export class AuthService {
       );
 
       localStorage.setItem(this.tokenKey, response.token);
-      const normalizedRole = this.normalizeRole(response.role) ?? role;
 
       const user: User = {
         userId: response.userId,
         email: response.email,
-        role: normalizedRole,
+        role: response.role ? this.normalizeRole(response.role) ?? 'TRAVELER' : 'TRAVELER',
         companyId: response.companyId,
         isFirstLogin: Boolean(response.isFirstLogin)
       };
@@ -102,13 +116,14 @@ export class AuthService {
     }
   }
 
-  async registerTraveler(name: string, email: string, password: string, phone?: string): Promise<boolean> {
+  async registerTraveler(name: string, email: string, password: string, phone?: string, companySlug?: string): Promise<boolean> {
     const payload: RegisterTravelerRequest = {
       name,
       email,
       password,
       phone,
       companyId: DEFAULT_TRAVELER_COMPANY_ID,
+      companySlug
     };
 
     try {
@@ -135,6 +150,30 @@ export class AuthService {
       this.logout();
       return false;
     }
+  }
+
+  async submitCompanyApplication(
+    companyName: string,
+    ownerName: string,
+    email: string,
+    phone: string,
+    companyDescription?: string
+  ): Promise<CompanyApplicationResponse> {
+
+    const payload: CompanyApplicationRequest = {
+      companyName,
+      ownerName,
+      email,
+      phone,
+      companyDescription
+    };
+
+    return await firstValueFrom(
+      this.http.post<CompanyApplicationResponse>(
+        `${API_BASE_URL}/api/company/applications`,
+        payload
+      )
+    );
   }
 
   logout(): void {
@@ -173,8 +212,11 @@ export class AuthService {
         return '/agency/review';
       case 'ADMIN':
         return '/admin/dashboard';
+      case 'SUPER_ADMIN':
+      return '/company-create';
+      
       default:
-        return '/login';
+      return '/login';
     }
   }
 

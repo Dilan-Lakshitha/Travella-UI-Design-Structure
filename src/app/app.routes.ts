@@ -8,18 +8,34 @@ export const routes: Routes = [
     redirectTo: 'login',
     pathMatch: 'full'
   },
+  // {
+  //   path: 'login',
+  //   loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent)
+  // },
   {
-    path: 'login',
+    path: 'company/:slug/login',
     loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent)
+  },
+  {
+    path: 'company/:slug/register',
+    loadComponent: () => import('./pages/register/register.component').then(m => m.RegisterComponent)
   },
   {
     path: 'reset-password',
     canActivate: [authGuard],
     loadComponent: () => import('./pages/reset-password/reset-password.component').then(m => m.ResetPasswordComponent)
   },
+  // {
+  //   path: 'register',
+  //   loadComponent: () => import('./pages/register/register.component').then(m => m.RegisterComponent)
+  // },
   {
-    path: 'register',
-    loadComponent: () => import('./pages/register/register.component').then(m => m.RegisterComponent)
+    path: 'company/:slug/company-application',
+    loadComponent: () => import('./pages/company-application/company-application.component').then(m => m.CompanyApplicationComponent)
+  },
+  {
+    path: 'company/:slug/company-create',
+    loadComponent: () => import('./pages/create-company/create-company.component').then(m => m.CreateCompanyComponent)
   },
   {
     path: 'guest',

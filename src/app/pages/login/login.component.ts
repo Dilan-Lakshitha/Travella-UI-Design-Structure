@@ -1,7 +1,7 @@
 import { Component, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
-import { Router } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
 import { AuthService, UserRole } from "../../services/auth.service";
 import {
   CardComponent,
@@ -16,6 +16,17 @@ import {
   LabelComponent,
 } from "../../components/ui/input.component";
 import { IconComponent } from "../../components/ui/icons.component";
+import {
+  LucideAngularModule,
+  Plane,
+  Briefcase,
+  Hotel,
+  Bell,
+  Mail,
+  Lock,
+  ArrowRight,
+  Building2
+} from 'lucide-angular';
 
 @Component({
   selector: "app-login",
@@ -32,6 +43,7 @@ import { IconComponent } from "../../components/ui/icons.component";
     InputComponent,
     LabelComponent,
     IconComponent,
+    LucideAngularModule
   ],
   templateUrl: "./login.component.html",
   styleUrls: ["./login.component.scss"],
@@ -39,12 +51,29 @@ import { IconComponent } from "../../components/ui/icons.component";
 export class LoginComponent {
   private router = inject(Router);
   private authService = inject(AuthService);
+  private route = inject(ActivatedRoute);
+
+  readonly Plane = Plane;
+  readonly Briefcase = Briefcase;
+  readonly Hotel = Hotel;
+  readonly Bell = Bell;
+  readonly Mail = Mail;
+  readonly Lock = Lock;
+  readonly ArrowRight = ArrowRight;
+  readonly Building2 = Building2;
 
   email = "";
   password = "";
   errorMessage = "";
   role: UserRole = 'TRAVELER';
   isLoading = false;
+
+  companySlug = '';
+
+  ngOnInit() {
+    this.companySlug =
+      this.route.snapshot.paramMap.get('slug')!;
+  }
 
   async handleLogin(): Promise<void> {
     this.errorMessage = "";
@@ -53,8 +82,7 @@ export class LoginComponent {
     try {
       const isSuccess = await this.authService.login(
         this.email,
-        this.password,
-        this.role
+        this.password
       );
 
       if (!isSuccess) {
@@ -77,6 +105,10 @@ export class LoginComponent {
   }
 
   goToRegister(): void {
-    this.router.navigate(["/register"]);
+    this.router.navigate(["company/" + this.companySlug + "/register"]);
+  }
+
+  goToCompanyApplication(): void {
+    this.router.navigate(["company/" + this.companySlug + "/company-application"]);
   }
 }

@@ -1,4 +1,4 @@
-export type UserRole = 'TRAVELER' | 'STAFF' | 'ADMIN';
+export type UserRole = 'TRAVELER' | 'STAFF' | 'ADMIN' | 'SUPER_ADMIN';;
 
 export type TravelerDashboardTab = 'draft' | 'submitted' | 'returned' | 'approved' | 'rejected';
 

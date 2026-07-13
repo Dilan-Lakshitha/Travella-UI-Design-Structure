@@ -80,7 +80,7 @@
                   <app-label>Total days (planned)</app-label>
                   <div class="builder-readonly">
                     <app-icon name="clock" [size]="16" class="builder-readonly__icon" />
-                    <span>{{ days.length }} {{ days.length === 1 ? 'day' : 'days' }}</span>
+                    <span>{{ scheduledTripDays }} {{ scheduledTripDays === 1 ? 'day' : 'days' }}</span>
                   </div>
                   @if (scheduledTripDays !== null) {
                     <p class="builder-field__help">{{ scheduledTripDays }} days between selected dates</p>
@@ -309,7 +309,7 @@
       </div>
       <div class="builder-summary__row">
         <dt>Days added</dt>
-        <dd>{{ days.length }}</dd>
+        <dd>{{ scheduledTripDays }}</dd>
       </div>
       @if (scheduledTripDays !== null) {
         <div class="builder-summary__row">
