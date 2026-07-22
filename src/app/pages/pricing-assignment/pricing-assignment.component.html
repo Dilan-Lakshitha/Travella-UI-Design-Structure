@@ -1,0 +1,255 @@
+    <app-layout title="Pricing & Staff Assignment" [role]="layoutRole">
+      <div class="max-w-4xl mx-auto space-y-6">
+        @if (isLoading) {
+          <app-card>
+            <app-card-content class="pt-6 text-center text-gray-500">
+              Loading pricing and assignment data...
+            </app-card-content>
+          </app-card>
+        }
+        @if (!isLoading && errorMessage) {
+          <app-card>
+            <app-card-content class="pt-6 text-center text-red-600">
+              {{ errorMessage }}
+            </app-card-content>
+          </app-card>
+        }
+        <!-- Trip Summary -->
+        <app-card>
+          <app-card-header>
+            <app-card-title>Trip Summary</app-card-title>
+          </app-card-header>
+          <app-card-content>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span class="text-gray-600">Trip:</span> {{ itinerary?.tripName || ('Itinerary #' + id) }}
+              </div>
+              <div>
+                <span class="text-gray-600">Guest:</span> {{ itinerary?.guestName || '—' }}
+              </div>
+              <div>
+                <span class="text-gray-600">Duration:</span> {{ itinerary?.daysCount ?? (itinerary?.days?.length ?? '—') }} days
+              </div>
+              <div>
+                <span class="text-gray-600">Dates:</span>
+                {{ itinerary?.startDate ? (itinerary?.startDate | date) : '—' }}
+                -
+                {{ itinerary?.endDate ? (itinerary?.endDate | date) : '—' }}
+              </div>
+            </div>
+          </app-card-content>
+        </app-card>
+
+        <!-- Pricing Breakdown -->
+        <app-card>
+          <app-card-header>
+            <app-card-title class="flex items-center">
+              <app-icon name="dollar-sign" [size]="20" class="mr-2" />
+              Pricing Breakdown
+            </app-card-title>
+          </app-card-header>
+          <app-card-content class="space-y-4">
+            <div class="grid gap-4 md:grid-cols-2">
+              <div class="space-y-2">
+                <app-label for="vehicle">
+                  <app-icon name="car" [size]="16" class="inline mr-2" />
+                  Vehicle Cost (Auto-calculated)
+                </app-label>
+                <app-input
+                  id="vehicle"
+                  type="number"
+                  [(ngModel)]="vehicleCost"
+                  [disabled]="!canEditPricing"
+                />
+              </div>
+
+              <div class="space-y-2">
+                <app-label for="driver">
+                  <app-icon name="user-check" [size]="16" class="inline mr-2" />
+                  Driver Fee
+                </app-label>
+                <app-input
+                  id="driver"
+                  type="number"
+                  [(ngModel)]="driverCost"
+                  [disabled]="!canEditPricing"
+                />
+              </div>
+
+              <div class="space-y-2">
+                <app-label for="guide">
+                  <app-icon name="user-check" [size]="16" class="inline mr-2" />
+                  Guide Fee
+                </app-label>
+                <app-input
+                  id="guide"
+                  type="number"
+                  [(ngModel)]="guideCost"
+                  [disabled]="!canEditPricing"
+                />
+              </div>
+
+              <div class="space-y-2">
+                <app-label for="accommodation">
+                  <app-icon name="home" [size]="16" class="inline mr-2" />
+                  Accommodation Cost
+                </app-label>
+                <app-input
+                  id="accommodation"
+                  type="number"
+                  [(ngModel)]="accommodationCost"
+                  [disabled]="!canEditPricing"
+                />
+              </div>
+
+              <div class="space-y-2">
+                <app-label for="mileageRate">
+                  <app-icon name="map-pin" [size]="16" class="inline mr-2" />
+                  Mileage Rate
+                </app-label>
+                <app-input
+                  id="mileageRate"
+                  type="number"
+                  [(ngModel)]="mileageRate"
+                  [disabled]="!canEditPricing"
+                />
+              </div>
+
+              <div class="space-y-2">
+                <app-label for="totalKm">
+                  <app-icon name="map-pin" [size]="16" class="inline mr-2" />
+                  Total KM
+                </app-label>
+                <app-input
+                  id="totalKm"
+                  type="number"
+                  [(ngModel)]="totalKm"
+                  [disabled]="!canEditPricing"
+                />
+              </div>
+
+              <div class="space-y-2">
+                <app-label for="profitMargin">
+                  <app-icon name="dollar-sign" [size]="16" class="inline mr-2" />
+                  Profit Margin (%)
+                </app-label>
+                <app-input
+                  id="profitMargin"
+                  type="number"
+                  [(ngModel)]="profitMargin"
+                  [disabled]="!canEditPricing && !canEditMarginOnly"
+                />
+              </div>
+
+              <div class="space-y-2">
+                <app-label for="mealPlan">Meal Plan</app-label>
+                <app-select
+                  id="mealPlan"
+                  [(ngModel)]="mealPlan"
+                  [disabled]="!canEditPricing"
+                  [options]="[
+                    { value: 'BB', label: 'BB' },
+                    { value: 'HB', label: 'HB' },
+                    { value: 'FB', label: 'FB' }
+                  ]"
+                />
+              </div>
+            </div>
+
+            <!-- Total -->
+            <div class="pt-4 border-t">
+              <div class="flex justify-between items-center">
+                <span class="text-lg font-semibold">Total Package Cost:</span>
+                <div class="text-right">
+                  <span class="text-2xl font-bold text-blue-600">{{ displayTotal | currency }}</span>
+                  @if (savedPricing) {
+                    <p class="text-xs text-gray-500">From saved pricing (server calculated)</p>
+                  } @else {
+                    <p class="text-xs text-gray-500">Preview — save to persist</p>
+                  }
+                </div>
+              </div>
+            </div>
+          </app-card-content>
+        </app-card>
+
+        @if (savedPricing) {
+          <app-card>
+            <app-card-header>
+              <app-card-title>Saved Pricing Breakdown</app-card-title>
+            </app-card-header>
+            <app-card-content class="grid grid-cols-2 gap-2 text-sm">
+              <div>Driver: {{ savedPricing.driverCost | currency }}</div>
+              <div>Guide: {{ savedPricing.guideCost | currency }}</div>
+              <div>Vehicle: {{ savedPricing.vehicleCost | currency }}</div>
+              <div>Mileage: {{ savedPricing.mileageRate | currency }} × {{ savedPricing.totalKm }} km</div>
+              <div>Accommodation: {{ savedPricing.accommodationCost | currency }}</div>
+              <div>Meal plan: {{ savedPricing.mealPlan }}</div>
+              <div>Margin: {{ savedPricing.profitMargin }}%</div>
+              <div class="font-semibold col-span-2">Total: {{ savedPricing.totalAmount | currency }}</div>
+            </app-card-content>
+          </app-card>
+        }
+
+        <!-- Staff Assignment -->
+        <app-card>
+          <app-card-header>
+            <app-card-title>Staff Assignment</app-card-title>
+          </app-card-header>
+          <app-card-content class="space-y-4">
+            <div class="space-y-2">
+              <app-label for="assignDriver">Assign Driver</app-label>
+              <app-select
+                id="assignDriver"
+                [(ngModel)]="selectedDriver"
+                [options]="driverOptions"
+                placeholder="Select a driver"
+              />
+            </div>
+
+            <div class="space-y-2">
+              <app-label for="assignGuide">Assign Guide</app-label>
+              <app-select
+                id="assignGuide"
+                [(ngModel)]="selectedGuide"
+                [options]="guideOptions"
+                placeholder="Select a guide"
+              />
+            </div>
+
+            @if (selectedDriver && selectedGuide) {
+              <div class="bg-green-50 p-4 rounded-lg">
+                <p class="text-sm text-green-800">
+                  <strong>Assigned Staff:</strong>
+                  <br />
+                  Driver: {{ getDriverName(selectedDriver) }}
+                  <br />
+                  Guide: {{ getGuideName(selectedGuide) }}
+                </p>
+              </div>
+            }
+          </app-card-content>
+        </app-card>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-wrap justify-end gap-3">
+          @if (canEditPricing) {
+            <button type="button" class="btn btn-primary" (click)="savePricing()" [disabled]="isSubmitting">
+              <app-icon name="save" [size]="16" class="mr-2" />
+              @if (isSubmitting) { Working... } @else { Save Pricing }
+            </button>
+          }
+          @if (canSendToOwner) {
+            <button type="button" class="btn btn-primary" (click)="sendToOwner()" [disabled]="isSubmitting">
+              <app-icon name="send" [size]="16" class="mr-2" />
+              @if (isSubmitting) { Working... } @else { Approve & Send to Owner }
+            </button>
+          }
+          @if (canEditMarginOnly) {
+            <button type="button" class="btn btn-outline" (click)="updateAdminMargin()" [disabled]="isSubmitting">
+              Update Profit Margin
+            </button>
+          }
+        </div>
+      </div>
+    </app-layout>

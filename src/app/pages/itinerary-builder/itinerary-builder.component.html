@@ -1,0 +1,345 @@
+<app-layout title="" role="TRAVELER">
+  <div class="builder" [class.builder--loading]="isLoadingDraft">
+    @if (isBusy) {
+      <div class="builder__progress" role="progressbar" [attr.aria-label]="loadingMessage">
+        <div class="builder__progress-bar"></div>
+      </div>
+    }
+
+    @if (isLoadingDraft) {
+      <div class="builder__overlay" aria-live="polite">
+        <div class="builder__spinner" aria-hidden="true"></div>
+        <p class="builder__overlay-text">{{ loadingMessage }}</p>
+      </div>
+    }
+
+    <header class="builder-hero">
+      <div class="builder-hero__content">
+        <div class="builder-hero__icon" aria-hidden="true">
+          <app-icon name="plane" [size]="22" />
+        </div>
+        <div>
+          <p class="builder-hero__eyebrow">Travella Trip Planner</p>
+          <h1 class="builder-hero__title">Create Your Itinerary</h1>
+          <p class="builder-hero__subtitle">Plan your trip day by day with destinations, attractions, and stays.</p>
+        </div>
+        @if (itineraryStatus) {
+          <span class="builder-status-chip" [ngClass]="itineraryStatusClass(itineraryStatus)">
+            {{ itineraryStatusLabel(itineraryStatus) }}
+          </span>
+        }
+      </div>
+    </header>
+
+    @if (!isLoadingDraft) {
+      <div class="builder__grid">
+        <div class="builder__main">
+          <!-- Trip details -->
+          <app-card class="builder-card">
+            <app-card-header class="builder-card__header">
+              <div class="builder-card__title-row">
+                <app-icon name="calendar" [size]="18" class="builder-card__icon" />
+                <app-card-title>Trip details</app-card-title>
+              </div>
+              <p class="builder-card__hint">Set your travel dates and trip name. Fields align for a quick overview.</p>
+            </app-card-header>
+            <app-card-content>
+              <div class="builder-form-grid builder-form-grid--trip">
+                <div class="builder-field">
+                  <app-label for="tripName">Trip name</app-label>
+                  <app-input
+                    id="tripName"
+                    placeholder="e.g., European Adventure"
+                    [(ngModel)]="tripName"
+                    [disabled]="isBusy"
+                  />
+                  <p class="builder-field__help">Optional label for your reference</p>
+                </div>
+                <div class="builder-field">
+                  <app-label for="startDate">Start date</app-label>
+                  <app-input
+                    id="startDate"
+                    type="date"
+                    [(ngModel)]="startDate"
+                    [disabled]="isBusy"
+                  />
+                </div>
+                <div class="builder-field">
+                  <app-label for="endDate">End date</app-label>
+                  <app-input
+                    id="endDate"
+                    type="date"
+                    [(ngModel)]="endDate"
+                    [disabled]="isBusy"
+                  />
+                  @if (isEndBeforeStart) {
+                    <p class="builder-field__error">End date must be on or after start date.</p>
+                  }
+                </div>
+                <div class="builder-field">
+                  <app-label>Total days (planned)</app-label>
+                  <div class="builder-readonly">
+                    <app-icon name="clock" [size]="16" class="builder-readonly__icon" />
+                    <span>{{ scheduledTripDays }} {{ scheduledTripDays === 1 ? 'day' : 'days' }}</span>
+                  </div>
+                  @if (scheduledTripDays !== null) {
+                    <p class="builder-field__help">{{ scheduledTripDays }} days between selected dates</p>
+                  }
+                </div>
+              </div>
+            </app-card-content>
+          </app-card>
+
+          <!-- Day by day -->
+          <section class="builder-days">
+            <div class="builder-days__header">
+              <div>
+                <h2 class="builder-days__title">
+                  <app-icon name="map-pin" [size]="20" class="builder-days__title-icon" />
+                  Day-by-day itinerary
+                </h2>
+                <p class="builder-days__subtitle">
+                  @if (scheduledTripDays !== null) {
+                    Building {{ days.length }} of {{ scheduledTripDays }} scheduled days
+                  } @else {
+                    {{ days.length }} {{ days.length === 1 ? 'day' : 'days' }} added · {{ totalAttractions }} attractions
+                  }
+                </p>
+              </div>
+              <button
+                type="button"
+                class="btn btn-outline btn-sm builder-btn-compact"
+                (click)="addDay()"
+                [disabled]="isBusy"
+              >
+                <app-icon name="plus" [size]="14" />
+                Add day
+              </button>
+            </div>
+
+            <div class="builder-days__list">
+              @for (day of days; track day.id) {
+                <article class="day-card" [class.day-card--expanded]="day.expanded">
+                  <button
+                    type="button"
+                    class="day-card__head"
+                    (click)="toggleDay(day)"
+                    [attr.aria-expanded]="day.expanded"
+                  >
+                    <span class="day-card__badge">Day {{ day.dayNumber }}</span>
+                    <div class="day-card__head-text">
+                      <h3 class="day-card__destination">
+                        {{ day.destination || 'Add destination' }}
+                      </h3>
+                      <p class="day-card__meta">
+                        {{ attractionCount(day) }} attraction{{ attractionCount(day) === 1 ? '' : 's' }}
+                        · {{ mealPlanLabel(day.mealPlan) }}
+                      </p>
+                    </div>
+                    <span class="day-card__chevron" [class.day-card__chevron--open]="day.expanded">›</span>
+                  </button>
+
+                  @if (day.expanded) {
+                    <div class="day-card__body">
+                      <div class="builder-field">
+                        <app-label>Destination</app-label>
+                        <app-input
+                          placeholder="e.g., Paris, France"
+                          [(ngModel)]="day.destination"
+                          [disabled]="isBusy"
+                        />
+                      </div>
+
+                      <div class="day-card__section">
+                        <div class="day-card__section-head">
+                          <app-label>Attractions</app-label>
+                          <button
+                            type="button"
+                            class="btn btn-outline btn-sm builder-btn-compact"
+                            (click)="addAttraction(day)"
+                            [disabled]="isBusy"
+                          >
+                            <app-icon name="plus" [size]="12" />
+                            Add attraction
+                          </button>
+                        </div>
+                        <p class="builder-field__help">Search and select places — saved automatically</p>
+                        <div class="attraction-list">
+                          @for (attraction of day.attractions; track $index; let i = $index) {
+                            <div class="attraction-row">
+                              <app-icon name="map-pin" [size]="16" class="attraction-row__icon" />
+                              <input
+                                #autoInput
+                                type="text"
+                                class="attraction-row__input"
+                                [value]="day.attractions[i]?.name"
+                                placeholder="Search attraction…"
+                                [disabled]="isBusy"
+                                (focus)="initAutocomplete(autoInput, day, i)"
+                              />
+                              @if (day.attractions.length > 1) {
+                                <button
+                                  type="button"
+                                  class="btn btn-ghost btn-icon attraction-row__remove"
+                                  (click)="removeAttraction(day, i)"
+                                  [disabled]="isBusy"
+                                  aria-label="Remove attraction"
+                                >
+                                  <app-icon name="trash" [size]="16" />
+                                </button>
+                              }
+                            </div>
+                          }
+                        </div>
+                      </div>
+
+                      <div class="builder-form-grid builder-form-grid--day">
+                        <div class="builder-field">
+                          <app-label>Meal plan</app-label>
+                          <app-select
+                            [(ngModel)]="day.mealPlan"
+                            [options]="mealPlanOptions"
+                            [disabled]="isBusy"
+                          />
+                        </div>
+                        <div class="builder-field">
+                          <app-label>Accommodation</app-label>
+                          <app-select
+                            [(ngModel)]="day.accommodation"
+                            [options]="accommodationOptions"
+                            placeholder="Select accommodation"
+                            [disabled]="isBusy"
+                          />
+                        </div>
+                      </div>
+
+                      @if (days.length > 1) {
+                        <div class="day-card__footer">
+                          <button
+                            type="button"
+                            class="btn btn-destructive btn-sm"
+                            (click)="removeDay(day.id)"
+                            [disabled]="isBusy"
+                          >
+                            <app-icon name="trash" [size]="14" />
+                            Remove day
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  }
+                </article>
+              }
+            </div>
+          </section>
+
+          <aside class="builder-summary builder-summary--mobile lg:hidden">
+            <ng-container *ngTemplateOutlet="summaryContent"></ng-container>
+          </aside>
+
+          <footer class="builder-actions">
+            @if (isSavingAttraction) {
+              <p class="builder-actions__status">
+                <span class="builder-inline-spinner" aria-hidden="true"></span>
+                Saving attraction…
+              </p>
+            }
+            <div class="builder-actions__buttons">
+              <button
+                type="button"
+                class="btn btn-outline builder-actions__draft"
+                (click)="handleSaveDraft()"
+                [disabled]="isBusy"
+              >
+                @if (isSavingDraft) {
+                  <span class="builder-inline-spinner builder-inline-spinner--dark" aria-hidden="true"></span>
+                  Saving…
+                } @else {
+                  <app-icon name="save" [size]="16" />
+                  Save draft
+                }
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary builder-actions__submit"
+                (click)="handleSubmit()"
+                [disabled]="isBusy"
+              >
+                @if (isSubmitting) {
+                  <span class="builder-inline-spinner builder-inline-spinner--light" aria-hidden="true"></span>
+                  Submitting…
+                } @else {
+                  <app-icon name="send" [size]="16" />
+                  Submit itinerary
+                }
+              </button>
+            </div>
+          </footer>
+        </div>
+
+        <aside class="builder-summary builder-summary--desktop hidden lg:block">
+          <ng-container *ngTemplateOutlet="summaryContent"></ng-container>
+        </aside>
+      </div>
+    }
+  </div>
+</app-layout>
+
+<ng-template #summaryContent>
+  <div class="builder-summary__card">
+    <h3 class="builder-summary__title">
+      <app-icon name="file-text" [size]="18" />
+      Trip summary
+    </h3>
+
+    <dl class="builder-summary__list">
+      <div class="builder-summary__row">
+        <dt>Trip name</dt>
+        <dd>{{ displayTripName }}</dd>
+      </div>
+      <div class="builder-summary__row">
+        <dt>Dates</dt>
+        <dd>
+          @if (startDate && endDate) {
+            {{ formatDisplayDate(startDate) }} – {{ formatDisplayDate(endDate) }}
+          } @else {
+            Not set
+          }
+        </dd>
+      </div>
+      <div class="builder-summary__row">
+        <dt>Days added</dt>
+        <dd>{{ scheduledTripDays }}</dd>
+      </div>
+      @if (scheduledTripDays !== null) {
+        <div class="builder-summary__row">
+          <dt>Scheduled span</dt>
+          <dd>{{ scheduledTripDays }} days</dd>
+        </div>
+      }
+      <div class="builder-summary__row">
+        <dt>Attractions</dt>
+        <dd>{{ totalAttractions }} total</dd>
+      </div>
+      <div class="builder-summary__row">
+        <dt>Meal plans</dt>
+        <dd class="builder-summary__multiline">{{ mealPlanSummary }}</dd>
+      </div>
+      @if (itineraryStatus) {
+        <div class="builder-summary__row">
+          <dt>Status</dt>
+          <dd>
+            <span class="builder-status-chip builder-status-chip--sm" [ngClass]="itineraryStatusClass(itineraryStatus)">
+              {{ itineraryStatusLabel(itineraryStatus) }}
+            </span>
+          </dd>
+        </div>
+      }
+    </dl>
+
+    <p class="builder-summary__tip">
+      <app-icon name="circle-alert" [size]="14" />
+      Save a draft anytime, then submit when your plan is ready.
+    </p>
+  </div>
+</ng-template>

@@ -1,0 +1,158 @@
+<div class="min-h-screen bg-gradient-to-br from-sky-100 via-white to-violet-100 overflow-hidden">
+  <div class="grid min-h-screen lg:grid-cols-2">
+
+    <!-- LEFT SIDE -->
+    <div class="hidden lg:flex flex-col justify-center px-16 relative">
+      <div class="absolute top-10 left-10 w-72 h-72 bg-sky-300/30 rounded-full blur-3xl"></div>
+      <div class="absolute bottom-10 right-10 w-72 h-72 bg-violet-300/30 rounded-full blur-3xl"></div>
+
+      <div class="relative z-10">
+        <div class="flex items-center gap-4 mb-8">
+          <div class="flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-r from-sky-500 to-violet-500 shadow-xl">
+            <lucide-icon [img]="Plane" class="h-8 w-8 text-white"></lucide-icon>
+          </div>
+
+          <div>
+            <h1 class="text-5xl font-bold text-gray-800">Travella</h1>
+            <p class="text-gray-500 text-lg">Smart Travel Management Platform</p>
+          </div>
+        </div>
+
+        <div class="space-y-6 mt-10">
+          <div class="flex items-start gap-4">
+            <div class="bg-white shadow-md rounded-xl p-3">
+              <lucide-icon [img]="Briefcase" class="h-5 w-5 text-sky-500"></lucide-icon>
+            </div>
+            <div>
+              <h3 class="font-semibold text-lg text-gray-800">Manage Trips Easily</h3>
+              <p class="text-gray-500">
+                Organize itineraries, approvals, and bookings in one place.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-4">
+            <div class="bg-white shadow-md rounded-xl p-3">
+              <lucide-icon [img]="Hotel" class="h-5 w-5 text-violet-500"></lucide-icon>
+            </div>
+            <div>
+              <h3 class="font-semibold text-lg text-gray-800">Accommodation & Meals</h3>
+              <p class="text-gray-500">
+                Add hotels, meal plans, and transportation seamlessly.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-4">
+            <div class="bg-white shadow-md rounded-xl p-3">
+              <lucide-icon [img]="Bell" class="h-5 w-5 text-pink-500"></lucide-icon>
+            </div>
+            <div>
+              <h3 class="font-semibold text-lg text-gray-800">Instant Notifications</h3>
+              <p class="text-gray-500">
+                Travelers and staff receive approval and update emails instantly.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDE -->
+    <div class="flex items-center justify-center p-6">
+      <div class="w-full max-w-md backdrop-blur-xl bg-white/80 border border-white/40 shadow-2xl rounded-3xl p-8">
+        <div class="text-center mb-8">
+          <div class="flex justify-center mb-5">
+            <div class="rounded-2xl bg-gradient-to-r from-sky-500 to-violet-500 p-4 shadow-lg">
+              <lucide-icon [img]="Plane" class="h-8 w-8 text-white"></lucide-icon>
+            </div>
+          </div>
+
+          <h2 class="text-4xl font-bold text-gray-800">Welcome Back</h2>
+          <p class="text-gray-500 mt-2">Sign in to continue your journey</p>
+        </div>
+
+        <form (ngSubmit)="handleLogin()" class="space-y-5">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+            <div class="relative">
+              <lucide-icon
+                [img]="Mail"
+                class="absolute left-2 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 pointer-events-none"
+              ></lucide-icon>
+
+              <input
+                id="login-email"
+                type="email"
+                placeholder="traveler@example.com"
+                [(ngModel)]="email"
+                name="email"
+                required
+                class="w-full rounded-2xl border border-gray-200 bg-gray-50 py-3 pl-12 pr-4 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+            <div class="relative">
+              <lucide-icon
+                [img]="Lock"
+                class="absolute left-2 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 pointer-events-none"
+              ></lucide-icon>
+
+              <input
+                id="login-password"
+                type="password"
+                placeholder="••••••••"
+                [(ngModel)]="password"
+                name="password"
+                required
+                class="w-full rounded-2xl border border-gray-200 bg-gray-50 py-3 pl-12 pr-4 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+              />
+            </div>
+          </div>
+
+          @if (errorMessage) {
+            <p class="text-sm text-red-500">
+              {{ errorMessage }}
+            </p>
+          }
+
+          <button
+            type="submit"
+            [disabled]="isLoading"
+            class="w-full h-12 rounded-2xl bg-gradient-to-r from-sky-500 to-violet-500 text-white font-semibold shadow-lg hover:scale-[1.01] transition-all duration-200 disabled:opacity-60"
+          >
+            @if (isLoading) {
+              Signing In...
+            } @else {
+              Sign In
+            }
+          </button>
+        </form>
+
+        <div class="mt-6 text-center space-y-3">
+          <p class="text-sm text-gray-500">Don't have an account?</p>
+
+          <button
+            type="button"
+            (click)="goToRegister()"
+            class="inline-flex items-center justify-center rounded-2xl border border-gray-200 bg-white px-5 py-2.5 font-medium text-gray-700 shadow-sm transition hover:bg-gray-50"
+          >
+            Create Account
+          </button>
+
+          <button
+            type="button"
+            (click)="goToCompanyApplication()"
+            class="ml-2 inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-sky-500 to-violet-500 px-5 py-2.5 font-medium text-white shadow-sm transition hover:scale-[1.01]"
+          >
+            Create Company
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

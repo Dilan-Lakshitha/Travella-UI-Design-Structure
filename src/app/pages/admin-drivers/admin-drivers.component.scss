@@ -1,0 +1,31 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+}
+
+.admin-resource-page {
+  padding-bottom: 1.5rem;
+}
+
+.resource-status {
+  display: inline-block;
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+.resource-status--available {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.resource-status--booked {
+  background: #fecdd3;
+  color: #9f1239;
+}
+
+.resource-status--unavailable {
+  background: #e5e7eb;
+  color: #374151;
+}

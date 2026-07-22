@@ -1,0 +1,1 @@
+import{Na as p,Xa as i,h as r,m as e,p as o}from"./chunk-7MHI4MYA.js";var m=class t{constructor(s){this.http=s}getDrivers(){return r(this.http.get(`${i}/api/drivers`))}getGuides(){return r(this.http.get(`${i}/api/guides`))}static \u0275fac=function(a){return new(a||t)(o(p))};static \u0275prov=e({token:t,factory:t.\u0275fac,providedIn:"root"})};export{m as a};

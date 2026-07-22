@@ -1,0 +1,69 @@
+<app-layout title="Staff Management" role="ADMIN">
+  <div class="space-y-6">
+    <app-card>
+      <app-card-header>
+        <app-card-title>Add Staff</app-card-title>
+        <app-card-description>Creates a STAFF user with a temporary password (first login requires reset).</app-card-description>
+      </app-card-header>
+      <app-card-content class="space-y-4">
+        <div class="grid gap-4 md:grid-cols-2">
+          <div class="space-y-2">
+            <app-label for="name">Name</app-label>
+            <app-input id="name" [(ngModel)]="name" placeholder="Full name" />
+          </div>
+          <div class="space-y-2">
+            <app-label for="email">Email</app-label>
+            <app-input id="email" type="email" [(ngModel)]="email" placeholder="staff@company.com" />
+          </div>
+        </div>
+
+        <button class="btn btn-primary" (click)="create()" [disabled]="isCreating">
+          <app-icon name="plus" [size]="16" class="mr-2" />
+          @if (isCreating) { Creating... } @else { Add Staff }
+        </button>
+
+        @if (lastCreated) {
+          <div class="border rounded-lg p-4 bg-yellow-50">
+            <div class="font-semibold mb-1">Temporary credentials (copy now)</div>
+            <div class="text-sm text-gray-700">
+              Email: <strong>{{ lastCreated.email }}</strong><br />
+              Temporary Password: <strong>{{ lastCreated.temporaryPassword }}</strong>
+            </div>
+          </div>
+        }
+      </app-card-content>
+    </app-card>
+
+    <app-card>
+      <app-card-header>
+        <app-card-title>Staff Users</app-card-title>
+        <app-card-description>All STAFF users in your company</app-card-description>
+      </app-card-header>
+      <app-card-content>
+        @if (isLoading) {
+          <div class="text-center text-gray-500 py-6">Loading staff...</div>
+        } @else if (errorMessage) {
+          <div class="text-center text-red-600 py-6">{{ errorMessage }}</div>
+        } @else {
+          <app-table>
+            <app-table-header>
+              <app-table-row>
+                <app-table-head>Name</app-table-head>
+                <app-table-head>Email</app-table-head>
+              </app-table-row>
+            </app-table-header>
+            <app-table-body>
+              @for (r of rows; track r.userId) {
+                <app-table-row>
+                  <app-table-cell class="font-medium">{{ r.name }}</app-table-cell>
+                  <app-table-cell>{{ r.email }}</app-table-cell>
+                </app-table-row>
+              }
+            </app-table-body>
+          </app-table>
+        }
+      </app-card-content>
+    </app-card>
+  </div>
+</app-layout>
+
